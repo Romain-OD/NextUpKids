@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net11.0</TargetFramework>
+		<OutputType>Exe</OutputType>
+		<UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>false</IsPackable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="xunit.v3" Version="4.0.3" />
+		<PackageReference Include="TngTech.ArchUnitNET.xUnitV3" Version="0.13.5" />
+		<PackageReference Include="NSubstitute" Version="6.2.0" />
+		<PackageReference Include="AwesomeAssertions" Version="9.6.0" />
+		<PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="11.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\NextUpKids\NextUpKids.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="Xunit" />
+	</ItemGroup>
+
+	<Target Name="ValidateArchitectureAfterBuild" AfterTargets="Build"
+			Condition="'$(DesignTimeBuild)' != 'true'">
+		<!-- Run the compiled tests directly so the build gate cannot recursively start another build. -->
+		<Exec WorkingDirectory="$(MSBuildProjectDirectory)"
+			  Command="dotnet &quot;$(TargetPath)&quot; --filter-class NextUpKids.Tests.Architecture.ArchitectureTests --minimum-expected-tests 1 --fail-skips on --no-banner" />
+	</Target>
+
+</Project>

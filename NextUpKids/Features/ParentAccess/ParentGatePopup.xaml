@@ -1,0 +1,15 @@
+<toolkit:Popup x:Class="NextUpKids.Features.ParentAccess.ParentGatePopup"
+               xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+               xmlns:local="clr-namespace:NextUpKids.Features.ParentAccess"
+               x:TypeArguments="x:Boolean" x:DataType="local:ParentGateViewModel">
+    <VerticalStackLayout Spacing="14" Padding="16" WidthRequest="300" BackgroundColor="White">
+        <Label Text="Espace parents" FontFamily="Nunito" FontSize="26" FontAttributes="Bold" TextColor="#17243B" />
+        <Label Text="{Binding Challenge}" FontSize="28" TextColor="#17243B" AutomationId="ParentChallenge" />
+        <Entry Text="{Binding Answer}" Keyboard="Numeric" MaxLength="4" Placeholder="Réponse"
+               ReturnType="Done" Completed="OnSubmit" AutomationId="ParentAnswer"
+               SemanticProperties.Description="Réponse au calcul" />
+        <Label Text="{Binding Error}" TextColor="#B04735" />
+        <Button Text="Ouvrir le programme" Clicked="OnSubmit" AutomationId="UnlockButton" />
+        <Button Text="Annuler" Clicked="OnCancel" />
+    </VerticalStackLayout>
+</toolkit:Popup>

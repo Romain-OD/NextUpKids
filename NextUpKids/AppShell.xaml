@@ -1,0 +1,7 @@
+﻿<Shell
+    x:Class="NextUpKids.AppShell"
+    FlyoutBehavior="Disabled">
+
+    <ShellContent x:Name="ChildContent" Route="child" />
+
+</Shell>

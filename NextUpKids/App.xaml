@@ -1,0 +1,10 @@
+﻿<Application x:Class="NextUpKids.App">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Common/Resources/Styles/Colors.xaml" />
+                <ResourceDictionary Source="Common/Resources/Styles/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

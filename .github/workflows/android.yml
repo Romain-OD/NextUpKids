@@ -1,0 +1,91 @@
+# Pushing a tag like v1.2.0 builds the signed Release APK and attaches it to the GitHub release
+# of that tag (created if missing). Pull requests and main only test and build.
+name: android
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    # Windows like the dev machine: restore evaluates the iOS target framework too, and its
+    # workload doesn't install on Linux.
+    runs-on: windows-latest
+    permissions:
+      contents: write # gh release create/upload
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: microsoft
+          java-version: '21'
+
+      - run: dotnet workload install maui-android maui-ios
+
+      - run: dotnet test NextUpKids.Tests
+
+      # Tag v1.2.0 -> versionName 1.2.0; versionCode = run number, so each APK is newer than the last.
+      # Every release is signed with the same key (otherwise Android refuses the update). The password
+      # goes through env: (MSBuild reads it there), never on the command line.
+      - name: Publish
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          $version = if ($env:RELEASE -eq 'true') { $env:TAG.TrimStart('v') } else { '0.0.0' }
+          $sign = @()
+          if ($env:RELEASE -eq 'true') {
+            $keystore = Join-Path $env:RUNNER_TEMP nextupkids-release.keystore
+            [IO.File]::WriteAllBytes($keystore, [Convert]::FromBase64String($env:KEYSTORE_BASE64))
+            $sign = '-p:AndroidKeyStore=true', "-p:AndroidSigningKeyStore=$keystore",
+              '-p:AndroidSigningKeyAlias=nextupkids',
+              '-p:AndroidSigningKeyPass=env:ANDROID_KEYSTORE_PASSWORD',
+              '-p:AndroidSigningStorePass=env:ANDROID_KEYSTORE_PASSWORD'
+          }
+          dotnet publish NextUpKids -f net11.0-android -c Release -p:AndroidPackageFormats=apk `
+            -p:ApplicationDisplayVersion=$version -p:ApplicationVersion=${{ github.run_number }} @sign
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Copy-Item NextUpKids/bin/Release/net11.0-android/publish/com.nextupkids.app-Signed.apk NextUpKids.apk
+          $bytes = (Get-Item NextUpKids.apk).Length
+          "### NextUpKids.apk: $([math]::Round($bytes / 1MB, 2)) MB, versionName $version, versionCode ${{ github.run_number }}" >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Upload to the release
+        if: env.RELEASE == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view $env:TAG *> $null
+          if ($LASTEXITCODE) {
+            gh release create $env:TAG --title "NextUpKids $env:TAG" --generate-notes --verify-tag
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
+          gh release upload $env:TAG NextUpKids.apk --clobber
+
+      - name: Keep the APK
+        uses: actions/upload-artifact@v7
+        with:
+          path: NextUpKids.apk
+          archive: false
+          if-no-files-found: error

@@ -1,0 +1,134 @@
+<ContentPage x:Class="NextUpKids.Features.WeeklyPlanner.ParentDashboardPage"
+             xmlns:local="clr-namespace:NextUpKids.Features.WeeklyPlanner"
+             xmlns:data="clr-namespace:NextUpKids.Common.Database"
+             x:DataType="local:ParentDashboardViewModel" BackgroundColor="#F5F8FC" Title="Programme de la semaine">
+    <ContentPage.Resources>
+        <Style TargetType="Label">
+            <Setter Property="FontFamily" Value="Nunito" />
+            <Setter Property="TextColor" Value="#17243B" />
+            <Setter Property="FontSize" Value="17" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="FontFamily" Value="Nunito" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="MinimumHeightRequest" Value="48" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="TextColor" Value="White" />
+            <Setter Property="BackgroundColor" Value="#176B57" />
+        </Style>
+    </ContentPage.Resources>
+    <Grid Padding="20,12" RowDefinitions="Auto,*,Auto" RowSpacing="12">
+        <Grid ColumnDefinitions="*,Auto">
+            <Label Text="Programme de la semaine" FontSize="26" FontAttributes="Bold" />
+            <Button Grid.Column="1" Text="Retour enfant" Clicked="OnClose" AutomationId="ClosePlanner" />
+        </Grid>
+        <Grid Grid.Row="1" ColumnDefinitions="0.85*,1.15*" ColumnSpacing="20" IsEnabled="{Binding CanEdit}">
+            <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
+                <Picker x:Name="DayPicker" Title="Jour" ItemsSource="{x:Static local:ParentDashboardViewModel.Days}"
+                        ItemDisplayBinding="{Binding Title, x:DataType=local:DayChoice}" SelectedIndex="0"
+                        SelectedIndexChanged="OnSelectionChanged" AutomationId="DayPicker" />
+                <Picker x:Name="PeriodPicker" Grid.Row="1" Title="Période" SelectedIndex="0"
+                        ItemsSource="{x:Static local:ParentDashboardViewModel.PeriodNames}"
+                        SelectedIndexChanged="OnSelectionChanged" AutomationId="PeriodPicker" />
+                <CollectionView Grid.Row="2" ItemsSource="{Binding Steps}" SelectedItem="{Binding SelectedStep}"
+                                SelectionMode="Single" EmptyView="Aucune étape. Ajoutez-en une."
+                                AutomationId="StepsList">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="data:RoutineStep">
+                            <Grid Padding="10" ColumnDefinitions="58,*" ColumnSpacing="10">
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup Name="CommonStates">
+                                        <VisualState Name="Normal">
+                                            <VisualState.Setters><Setter Property="BackgroundColor" Value="Transparent" /></VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState Name="Selected">
+                                            <VisualState.Setters><Setter Property="BackgroundColor" Value="#CDEBE3" /></VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <Image Source="{Binding Image}" HeightRequest="52" Aspect="AspectFit" />
+                                <Label Grid.Column="1" Text="{Binding Title}" VerticalOptions="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+                <Grid Grid.Row="3" ColumnDefinitions="*,*,*" ColumnSpacing="6">
+                    <Button Text="Ajouter" Command="{Binding NewStepCommand}" AutomationId="NewStep" />
+                    <Button Grid.Column="1" Text="Monter" Command="{Binding MoveUpCommand}" />
+                    <Button Grid.Column="2" Text="Descendre" Command="{Binding MoveDownCommand}" />
+                </Grid>
+            </Grid>
+            <ScrollView Grid.Column="1">
+                <VerticalStackLayout Spacing="12" Padding="0,0,8,24">
+                    <Label Text="Étape : modifier puis enregistrer" FontAttributes="Bold" />
+                    <Entry Text="{Binding StepTitle}" Placeholder="Instruction à lire à l'enfant" MaxLength="140"
+                           AutomationId="StepTitleEntry" SemanticProperties.Description="Titre de l'étape" />
+                    <Image Source="{Binding StepImage}" HeightRequest="90" Aspect="AspectFit" />
+                    <Picker Title="Catégorie" ItemsSource="{x:Static local:ParentDashboardViewModel.Categories}"
+                            SelectedItem="{Binding Category}" AutomationId="IconCategory" />
+                    <CollectionView ItemsSource="{Binding Icons}" SelectionMode="Single"
+                                    SelectionChanged="OnIconSelected" HeightRequest="115">
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="local:IconChoice">
+                                <VerticalStackLayout WidthRequest="80" Padding="4">
+                                    <Image Source="{Binding Image}" HeightRequest="62" Aspect="AspectFit" />
+                                    <Label Text="{Binding Title}" FontSize="13" HorizontalTextAlignment="Center" />
+                                </VerticalStackLayout>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                    <Button Text="Importer une photo" Clicked="OnPickPhoto" AutomationId="ImportPhoto" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Text="Enregistrer l'étape" Command="{Binding SaveStepCommand}" AutomationId="SaveStep" />
+                        <Button Grid.Column="1" Text="Supprimer l'étape" Clicked="OnDelete" BackgroundColor="#A53E36" />
+                    </Grid>
+                    <BoxView HeightRequest="1" Color="#CEDBE5" />
+                    <Label Text="Déclenchement de cette période — tous les jours" FontAttributes="Bold" />
+                    <TimePicker Time="{Binding StartTime}" Format="HH:mm" AutomationId="TriggerTime"
+                                SemanticProperties.Description="Heure de déclenchement" />
+                    <Picker Title="Voix de cette période" ItemsSource="{x:Static local:ParentDashboardViewModel.VoiceNames}"
+                            SelectedIndex="{Binding VoiceIndex}" />
+                    <Picker Title="Langue de la voix" ItemsSource="{x:Static local:ParentDashboardViewModel.LanguageNames}"
+                            SelectedIndex="{Binding LanguageIndex}" />
+                    <Label Text="Les titres personnalisés sont lus tels qu'ils sont écrits." FontSize="13" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Text="Écouter" Command="{Binding PreviewCommand}" />
+                        <Button Grid.Column="1" Text="Enregistrer les réglages" Command="{Binding SaveSettingsCommand}" />
+                    </Grid>
+                    <BoxView HeightRequest="1" Color="#CEDBE5" />
+                    <Label Text="Copier les quatre périodes vers…" FontAttributes="Bold" />
+                    <CollectionView ItemsSource="{x:Static local:ParentDashboardViewModel.Days}"
+                                    SelectionMode="Multiple" SelectedItems="{Binding CopyTargets}" HeightRequest="160">
+                        <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="3" /></CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="local:DayChoice">
+                                <Grid Padding="10">
+                                    <VisualStateManager.VisualStateGroups>
+                                        <VisualStateGroup Name="CommonStates">
+                                            <VisualState Name="Normal">
+                                                <VisualState.Setters><Setter Property="BackgroundColor" Value="Transparent" /></VisualState.Setters>
+                                            </VisualState>
+                                            <VisualState Name="Selected">
+                                                <VisualState.Setters><Setter Property="BackgroundColor" Value="#A5DCCA" /></VisualState.Setters>
+                                            </VisualState>
+                                        </VisualStateGroup>
+                                    </VisualStateManager.VisualStateGroups>
+                                    <Label Text="{Binding Title}" />
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                    <Button Text="Copier la journée" Clicked="OnDuplicate" />
+                </VerticalStackLayout>
+            </ScrollView>
+        </Grid>
+        <VerticalStackLayout Grid.Row="2">
+            <Label Text="{Binding Error}" TextColor="#A53E36" AutomationId="PlannerError" />
+            <Label Text="{Binding Status}" TextColor="#176B57" />
+        </VerticalStackLayout>
+        <ActivityIndicator Grid.Row="1" IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" InputTransparent="True" />
+    </Grid>
+</ContentPage>

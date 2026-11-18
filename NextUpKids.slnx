@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="NextUpKids.Tests/NextUpKids.Tests.csproj" />
+  <Project Path="NextUpKids/NextUpKids.csproj" />
+</Solution>
