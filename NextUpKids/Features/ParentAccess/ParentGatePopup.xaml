@@ -2,14 +2,17 @@
                xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
                xmlns:local="clr-namespace:NextUpKids.Features.ParentAccess"
                x:TypeArguments="x:Boolean" x:DataType="local:ParentGateViewModel">
-    <VerticalStackLayout Spacing="14" Padding="16" WidthRequest="300" BackgroundColor="White">
-        <Label Text="Espace parents" FontFamily="Nunito" FontSize="26" FontAttributes="Bold" TextColor="#17243B" />
-        <Label Text="{Binding Challenge}" FontSize="28" TextColor="#17243B" AutomationId="ParentChallenge" />
-        <Entry Text="{Binding Answer}" Keyboard="Numeric" MaxLength="4" Placeholder="Réponse"
+    <!-- Compact so it fits a landscape phone (~360 dp tall), not just a tablet. -->
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,*" RowSpacing="8" ColumnSpacing="12"
+          Padding="16,8" WidthRequest="440" BackgroundColor="White">
+        <Label Grid.ColumnSpan="2" Text="Espace parents" FontFamily="Nunito" FontSize="22" FontAttributes="Bold" TextColor="#17243B" />
+        <Label Grid.Row="1" Text="{Binding Challenge}" FontSize="26" TextColor="#17243B" VerticalOptions="Center"
+               AutomationId="ParentChallenge" />
+        <Entry Grid.Row="1" Grid.Column="1" Text="{Binding Answer}" Keyboard="Numeric" MaxLength="4" Placeholder="Réponse"
                ReturnType="Done" Completed="OnSubmit" AutomationId="ParentAnswer"
                SemanticProperties.Description="Réponse au calcul" />
-        <Label Text="{Binding Error}" TextColor="#B04735" />
-        <Button Text="Ouvrir le programme" Clicked="OnSubmit" AutomationId="UnlockButton" />
-        <Button Text="Annuler" Clicked="OnCancel" />
-    </VerticalStackLayout>
+        <Label Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding Error}" TextColor="#B04735" />
+        <Button Grid.Row="3" Text="Annuler" Clicked="OnCancel" />
+        <Button Grid.Row="3" Grid.Column="1" Text="Ouvrir" Clicked="OnSubmit" AutomationId="UnlockButton" />
+    </Grid>
 </toolkit:Popup>

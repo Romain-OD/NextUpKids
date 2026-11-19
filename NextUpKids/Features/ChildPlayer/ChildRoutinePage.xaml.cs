@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using CommunityToolkit.Maui.Alerts;
 
 namespace NextUpKids.Features.ChildPlayer;
 
@@ -12,6 +13,8 @@ public partial class ChildRoutinePage : ContentPage
 		this.viewModel = viewModel;
 		BindingContext = viewModel;
 		ParentHold.BindingContext = viewModel;
+		// A short tap gets a hint; only the 3-second hold (LongPressCommand) opens the gate.
+		ParentHold.Command = new Command(() => Toast.Make("Parents : maintenir 3 secondes").Show());
 	}
 
 	protected override void OnAppearing()
