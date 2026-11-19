@@ -92,17 +92,28 @@ public partial class ChildRoutineViewModel : ObservableObject, IDisposable
 		}
 	}
 
-	bool CanAdvance() => active && HasStep && !IsCelebrating && !IsLoading;
+	bool CanAdvance() => active && HasStep && !IsLoading;
 
 	[RelayCommand(CanExecute = nameof(CanAdvance), AllowConcurrentExecutions = true)]
 	async Task DoneAsync()
 	{
 		if (!CanAdvance()) return;
+		var skipping = IsCelebrating;
 		playback.Cancel();
 		playback.Dispose();
 		playback = new();
 		var token = playback.Token;
 		voice.Cancel();
+		if (skipping)
+		{
+			// A tap during the celebration skips it: the cancelled celebration never reaches its index++,
+			// so exactly one step is advanced here.
+			IsCelebrating = false;
+			index++;
+			try { await ShowFrameAsync(token); }
+			catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+			return;
+		}
 		IsCelebrating = true;
 		try
 		{

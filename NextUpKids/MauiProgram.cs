@@ -23,7 +23,8 @@ public static class MauiProgram
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
 				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
-				fonts.AddFont("Nunito.ttf", "Nunito");
+				fonts.AddFont("Nunito-Regular.ttf", "Nunito");
+				fonts.AddFont("Nunito-ExtraBold.ttf", "NunitoBold");
 			});
 
 		builder.Services

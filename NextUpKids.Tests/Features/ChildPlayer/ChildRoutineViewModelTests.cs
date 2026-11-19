@@ -19,7 +19,7 @@ public class ChildRoutineViewModelTests
 	}
 
 	[Fact]
-	public async Task Done_interrupts_speech_ignores_rapid_taps_then_advances_and_replays()
+	public async Task Tap_during_celebration_skips_it_and_advances_exactly_one_step()
 	{
 		await using var scope = new TestDatabase();
 		var clock = new FakeTimeProvider();
@@ -30,12 +30,14 @@ public class ChildRoutineViewModelTests
 		vm.Progress.Should().Be("1 / 3");
 		voice.ClearReceivedCalls();
 		var done = vm.DoneCommand.ExecuteAsync(null);
-		await vm.DoneCommand.ExecuteAsync(null);
-		voice.Received(1).Cancel();
 		vm.IsCelebrating.Should().BeTrue();
+		await vm.DoneCommand.ExecuteAsync(null);
+		voice.Received(2).Cancel();
+		vm.IsCelebrating.Should().BeFalse();
+		vm.Title.Should().Be("Prendre le petit déjeuner");
+		vm.Progress.Should().Be("2 / 3");
 		clock.Advance(TimeSpan.FromSeconds(1));
 		await done;
-		vm.Title.Should().Be("Prendre le petit déjeuner");
 		vm.Progress.Should().Be("2 / 3");
 		vm.IsCelebrating.Should().BeFalse();
 		await vm.ReplayCommand.ExecuteAsync(null);

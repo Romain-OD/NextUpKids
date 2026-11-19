@@ -27,13 +27,26 @@ public partial class ChildRoutinePage : ContentPage
 	{
 		viewModel.PropertyChanged -= OnFrameChanged;
 		FrameContent.CancelAnimations();
+		StepCard.CancelAnimations();
 		base.OnDisappearing();
 	}
 
 	async void OnFrameChanged(object? sender, PropertyChangedEventArgs e)
 	{
+		if (e.PropertyName == nameof(ChildRoutineViewModel.IsCelebrating) && viewModel.IsCelebrating)
+		{
+			try { HapticFeedback.Default.Perform(HapticFeedbackType.Click); } catch { /* no vibrator */ }
+			if (!Motion.IsReduced) Sparkles.Burst();
+			return;
+		}
 		if (e.PropertyName != nameof(ChildRoutineViewModel.Title)) return;
 		FrameContent.Opacity = 0.4;
-		await FrameContent.FadeToAsync(1, 220);
+		if (Motion.IsReduced)
+		{
+			await FrameContent.FadeToAsync(1, 150);
+			return;
+		}
+		StepCard.Scale = 0.85;
+		await Task.WhenAll(FrameContent.FadeToAsync(1, 180), StepCard.ScaleToAsync(1, 350, Easing.SpringOut));
 	}
 }

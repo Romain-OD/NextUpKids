@@ -22,6 +22,7 @@ public partial class App : Application
 		ScheduleMonitorService scheduler, IMessenger messenger, IVoiceService voice, IMediaPicker media)
 	{
 		InitializeComponent();
+		UserAppTheme = AppTheme.Light;
 		this.child = child;
 		this.planner = planner;
 		this.gate = gate;

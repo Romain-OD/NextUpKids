@@ -2,16 +2,16 @@
              xmlns:local="clr-namespace:NextUpKids.Features.ChildPlayer"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:DataType="local:ChildRoutineViewModel"
-             BackgroundColor="#EFF8FC" Shell.NavBarIsVisible="False">
+             BackgroundColor="{StaticResource Cloud}" Shell.NavBarIsVisible="False">
     <ContentPage.Triggers>
         <DataTrigger TargetType="ContentPage" Binding="{Binding IsDimmed}" Value="True">
-            <Setter Property="BackgroundColor" Value="#17243B" />
+            <Setter Property="BackgroundColor" Value="{StaticResource Night}" />
         </DataTrigger>
     </ContentPage.Triggers>
     <Grid>
-        <Grid x:Name="FrameContent" Padding="28,16" RowDefinitions="Auto,*,Auto,Auto" RowSpacing="10">
-            <Label Text="{Binding Title}" FontFamily="Nunito" FontSize="38" FontAttributes="Bold"
-                   HorizontalTextAlignment="Center" TextColor="#17243B" Margin="58,0"
+        <Grid x:Name="FrameContent" Padding="28,14" RowDefinitions="Auto,*,Auto,Auto" RowSpacing="12">
+            <Label Text="{Binding Title}" FontSize="38" FontFamily="NunitoBold"
+                   HorizontalTextAlignment="Center" Margin="58,0"
                    AutomationId="RoutineTitle">
                 <Label.Triggers>
                     <DataTrigger TargetType="Label" Binding="{Binding IsDimmed}" Value="True">
@@ -19,31 +19,45 @@
                     </DataTrigger>
                 </Label.Triggers>
             </Label>
-            <ImageButton Grid.Row="1" Source="{Binding Image}" Aspect="AspectFit" BackgroundColor="Transparent"
-                         Command="{Binding DoneCommand}" AutomationId="RoutineImage"
-                         SemanticProperties.Description="{Binding Title}"
-                         SemanticProperties.Hint="Toucher pour terminer cette étape">
-                <ImageButton.Triggers>
-                    <DataTrigger TargetType="ImageButton" Binding="{Binding IsDimmed}" Value="True">
+            <Border x:Name="StepCard" Grid.Row="1" BackgroundColor="{StaticResource White}"
+                    StrokeShape="RoundRectangle 32" Padding="12" HorizontalOptions="Center">
+                <Border.Shadow>
+                    <Shadow Brush="{StaticResource Swan}" Offset="0,6" Radius="0" Opacity="1" />
+                </Border.Shadow>
+                <Border.Triggers>
+                    <DataTrigger TargetType="Border" Binding="{Binding IsDimmed}" Value="True">
                         <Setter Property="Opacity" Value="0.45" />
                     </DataTrigger>
-                </ImageButton.Triggers>
-            </ImageButton>
+                </Border.Triggers>
+                <ImageButton Source="{Binding Image}" Aspect="AspectFit" BackgroundColor="Transparent"
+                             Command="{Binding DoneCommand}" AutomationId="RoutineImage"
+                             SemanticProperties.Description="{Binding Title}"
+                             SemanticProperties.Hint="Toucher pour terminer cette étape" />
+            </Border>
             <Grid Grid.Row="2" ColumnDefinitions="90,*,90" ColumnSpacing="18">
                 <ImageButton Source="speaker.png" Command="{Binding ReplayCommand}" HeightRequest="70"
-                             BackgroundColor="#D6EAF1" CornerRadius="24" Padding="12" AutomationId="ReplayButton"
-                             SemanticProperties.Description="Répéter / Repeat" />
+                             BackgroundColor="{StaticResource Sky}" CornerRadius="22" Padding="14" AutomationId="ReplayButton"
+                             SemanticProperties.Description="Répéter / Repeat">
+                    <ImageButton.Shadow>
+                        <Shadow Brush="{StaticResource SkyLip}" Offset="0,6" Radius="0" Opacity="1" />
+                    </ImageButton.Shadow>
+                </ImageButton>
                 <Button Grid.Column="1" Text="{Binding DoneText}" Command="{Binding DoneCommand}"
-                        IsVisible="{Binding HasStep}" FontFamily="Nunito" FontSize="30" FontAttributes="Bold"
-                        CornerRadius="28" BackgroundColor="#176B57" TextColor="White" HeightRequest="76"
+                        IsVisible="{Binding HasStep}" FontSize="30" CornerRadius="24" HeightRequest="76"
                         AutomationId="DoneButton" />
-                <Label Grid.Column="2" Text="{Binding Progress}" FontFamily="Nunito" FontSize="22"
-                       TextColor="#52718A" VerticalTextAlignment="Center" HorizontalTextAlignment="Center" />
+                <Border Grid.Column="2" BackgroundColor="{StaticResource Sun}" StrokeThickness="0" IsVisible="{Binding HasStep}"
+                        StrokeShape="RoundRectangle 22" HeightRequest="52" VerticalOptions="Center">
+                    <Border.Shadow>
+                        <Shadow Brush="{StaticResource SunLip}" Offset="0,4" Radius="0" Opacity="1" />
+                    </Border.Shadow>
+                    <Label Text="{Binding Progress}" FontSize="22" FontFamily="NunitoBold"
+                           VerticalTextAlignment="Center" HorizontalTextAlignment="Center" />
+                </Border>
             </Grid>
-            <Label Grid.Row="3" Text="{Binding Error}" FontSize="14" TextColor="#B04735"
+            <Label Grid.Row="3" Text="{Binding Error}" FontSize="15" TextColor="{StaticResource ErrorText}"
                    HorizontalTextAlignment="Center" />
         </Grid>
-        <local:SparkleView IsActive="{Binding IsCelebrating}" InputTransparent="True" />
+        <local:SparkleView x:Name="Sparkles" InputTransparent="True" />
         <Border WidthRequest="48" HeightRequest="48" HorizontalOptions="Start" VerticalOptions="Start"
                 BackgroundColor="Transparent" StrokeThickness="0" AutomationId="ParentCorner"
                 SemanticProperties.Description="Parents : maintenir trois secondes">
@@ -51,7 +65,7 @@
                 <toolkit:TouchBehavior x:Name="ParentHold" LongPressDuration="3000"
                                        LongPressCommand="{Binding RequestParentAccessCommand}" />
             </Border.Behaviors>
-            <Label Text="•••" TextColor="#678499" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
+            <Label Text="•••" TextColor="{StaticResource InkSoft}" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
         </Border>
         <ActivityIndicator IsRunning="{Binding IsLoading}" IsVisible="{Binding IsLoading}"
                            HorizontalOptions="Center" VerticalOptions="Center" />
