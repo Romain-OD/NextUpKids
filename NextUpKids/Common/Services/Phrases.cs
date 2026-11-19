@@ -6,6 +6,7 @@ public static class Phrases
 {
 	public static string Praise(AppLanguage language) => language == AppLanguage.French ? "Bravo !" : "Great job!";
 	public static string Done(AppLanguage language) => language == AppLanguage.French ? "Terminé !" : "Done!";
+	public static string EventReady(AppLanguage language) => language == AppLanguage.French ? "Bravo ! C'est parti !" : "Great job! Let's go!";
 	public static string Ending(Period period, AppLanguage language) => (period, language) switch
 	{
 		(Period.BeforeSchool, AppLanguage.French) => "Bravo ! Tu es prêt pour l'école !",

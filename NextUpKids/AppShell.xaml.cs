@@ -20,12 +20,13 @@ public partial class AppShell : Shell
 	readonly IMessenger messenger;
 	readonly IVoiceService voice;
 	readonly IMediaPicker media;
+	readonly EventPlannerViewModel events;
 	ParentDashboardPage? dashboard;
 	bool openingParents;
 	bool foreground;
 
 	public AppShell(ChildRoutineViewModel child, ParentDashboardViewModel planner, ParentGateViewModel gate,
-		ScheduleMonitorService scheduler, IMessenger messenger, IVoiceService voice, IMediaPicker media)
+		ScheduleMonitorService scheduler, IMessenger messenger, IVoiceService voice, IMediaPicker media, EventPlannerViewModel events)
 	{
 		InitializeComponent();
 		this.child = child;
@@ -35,6 +36,7 @@ public partial class AppShell : Shell
 		this.messenger = messenger;
 		this.voice = voice;
 		this.media = media;
+		this.events = events;
 		ChildContent.Content = new ChildRoutinePage(child);
 		messenger.Register<ParentGateRequestedMessage>(this, (r, m) => _ = ((AppShell)r).OpenParentsAsync());
 	}
@@ -74,7 +76,7 @@ public partial class AppShell : Shell
 			{
 				await planner.LoadAsync();
 				if (!foreground) return;
-				dashboard = new ParentDashboardPage(planner, media);
+				dashboard = new ParentDashboardPage(planner, media, events);
 				dashboard.CloseRequested += OnClosePlanner;
 				await Navigation.PushModalAsync(dashboard);
 			}

@@ -7,14 +7,16 @@ public partial class ParentDashboardPage : ContentPage
 {
 	readonly ParentDashboardViewModel viewModel;
 	readonly IMediaPicker mediaPicker;
+	readonly EventPlannerViewModel events;
 	bool syncing;
 	public event EventHandler? CloseRequested;
 
-	public ParentDashboardPage(ParentDashboardViewModel viewModel, IMediaPicker mediaPicker)
+	public ParentDashboardPage(ParentDashboardViewModel viewModel, IMediaPicker mediaPicker, EventPlannerViewModel events)
 	{
 		InitializeComponent();
 		this.viewModel = viewModel;
 		this.mediaPicker = mediaPicker;
+		this.events = events;
 		BindingContext = viewModel;
 		viewModel.PropertyChanged += (_, e) =>
 		{
@@ -111,6 +113,11 @@ public partial class ParentDashboardPage : ContentPage
 		if (await DisplayAlertAsync("Remplacer les journées sélectionnées ?",
 			"Les quatre périodes enregistrées du jour affiché remplaceront celles des jours sélectionnés.", "Copier", "Annuler"))
 			await viewModel.DuplicateDayCommand.ExecuteAsync(null);
+	}
+
+	async void OnOpenEvents(object? sender, EventArgs e)
+	{
+		if (!viewModel.IsBusy && await ConfirmDiscardAsync()) await Navigation.PushModalAsync(new EventPlannerPage(events));
 	}
 
 	async void OnClose(object? sender, EventArgs e)

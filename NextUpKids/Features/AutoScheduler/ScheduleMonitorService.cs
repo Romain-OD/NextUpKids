@@ -62,13 +62,20 @@ public sealed class ScheduleMonitorService : IDisposable
 		var settings = await db.Table<PeriodSetting>().ToListAsync().ConfigureAwait(false);
 		var steps = await db.Table<RoutineStep>().ToListAsync().ConfigureAwait(false);
 		var now = time.GetLocalNow().DateTime;
-		return (from offset in new[] { 0, -1 }
-				let date = now.Date.AddDays(offset)
-				from setting in settings
-				let start = date + setting.StartTime
-				where start <= now && steps.Any(s => s.Day == date.DayOfWeek && s.Period == setting.Period)
-				orderby start descending, setting.Period descending
-				select new PeriodStartedMessage(DateOnly.FromDateTime(date), setting.Period)).FirstOrDefault();
+		var from = now.Date.AddDays(-1);
+		var events = await db.Table<CalendarEvent>().Where(e => e.Start <= now && e.Start >= from).ToListAsync().ConfigureAwait(false);
+		var withSteps = (await db.Table<EventStep>().ToListAsync().ConfigureAwait(false)).Select(s => s.RoutineId).ToHashSet();
+		// The most recent start wins; at the same minute an event beats the daily period.
+		var periods = from offset in new[] { 0, -1 }
+					  let date = now.Date.AddDays(offset)
+					  from setting in settings
+					  let start = date + setting.StartTime
+					  where start <= now && steps.Any(s => s.Day == date.DayOfWeek && s.Period == setting.Period)
+					  select (start, rank: (int)setting.Period, message: new PeriodStartedMessage(DateOnly.FromDateTime(date), setting.Period));
+		var dated = from e in events
+					where withSteps.Contains(e.RoutineId)
+					select (start: e.Start, rank: 100 + e.Id, message: new PeriodStartedMessage(DateOnly.FromDateTime(e.Start), Period.AfterSchool, e.Id));
+		return periods.Concat(dated).OrderByDescending(c => c.start).ThenByDescending(c => c.rank).Select(c => c.message).FirstOrDefault();
 	}
 
 	public async Task CheckAsync()

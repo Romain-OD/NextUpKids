@@ -19,6 +19,30 @@ public class ChildRoutineViewModelTests
 	}
 
 	[Fact]
+	public async Task Calendar_event_plays_its_activity_subtasks_then_a_go_message()
+	{
+		await using var scope = new TestDatabase();
+		var voice = Voice();
+		using var vm = new ChildRoutineViewModel(scope.Database, voice, new FakeTimeProvider(), new WeakReferenceMessenger());
+		var db = await scope.Database.ConnectionAsync();
+		var bed = await db.Table<EventRoutine>().FirstAsync(r => r.Title == "Coucher");
+		var calendarEvent = new CalendarEvent { RoutineId = bed.Id, Start = new DateTime(2026, 11, 16, 20, 0, 0) };
+		await db.InsertAsync(calendarEvent);
+
+		await vm.SwitchPeriodAsync(new(new DateOnly(2026, 11, 16), Period.AfterSchool, calendarEvent.Id));
+		vm.Title.Should().Be("Aller aux toilettes");
+		vm.Progress.Should().Be("1 / 2");
+		await voice.Received().SpeakAsync("Aller aux toilettes", AppLanguage.French, VoiceMode.On, Arg.Any<CancellationToken>());
+		var celebrating = vm.DoneCommand.ExecuteAsync(null);
+		await vm.DoneCommand.ExecuteAsync(null);
+		await celebrating;
+		vm.Title.Should().Be("Aller au lit");
+		await db.DeleteAsync(calendarEvent);
+		await vm.SwitchPeriodAsync(new(new DateOnly(2026, 11, 16), Period.AfterSchool, calendarEvent.Id));
+		vm.HasStep.Should().BeFalse();
+	}
+
+	[Fact]
 	public async Task Tap_during_celebration_skips_it_and_advances_exactly_one_step()
 	{
 		await using var scope = new TestDatabase();

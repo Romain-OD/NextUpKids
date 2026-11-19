@@ -7,7 +7,7 @@
         <toolkit:IsStringNotNullOrEmptyConverter x:Key="HasText" />
     </ContentPage.Resources>
     <Grid Padding="20,12" RowDefinitions="Auto,*" RowSpacing="12">
-        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="16">
             <Label Text="Programme de la semaine" FontSize="26" FontFamily="NunitoBold" VerticalOptions="Center" />
             <!-- Feedback sits at the top so the keyboard never hides it. -->
             <Label Grid.Column="1" Text="{Binding Error}" TextColor="{StaticResource ErrorText}" FontFamily="NunitoBold"
@@ -16,7 +16,8 @@
             <Label Grid.Column="1" Text="{Binding Status, StringFormat='✓ {0}'}" TextColor="{StaticResource SuccessText}" FontFamily="NunitoBold"
                    HorizontalTextAlignment="End" VerticalOptions="Center" LineBreakMode="TailTruncation" AutomationId="PlannerStatus"
                    IsVisible="{Binding Status, Converter={StaticResource HasText}}" />
-            <Button Grid.Column="2" Text="Retour enfant" Style="{StaticResource QuietButton}" Clicked="OnClose" AutomationId="ClosePlanner" />
+            <Button Grid.Column="2" Text="Activités &amp; calendrier" Style="{StaticResource SkyButton}" Clicked="OnOpenEvents" AutomationId="OpenEvents" />
+            <Button Grid.Column="3" Text="Retour enfant" Style="{StaticResource QuietButton}" Clicked="OnClose" AutomationId="ClosePlanner" />
         </Grid>
         <Grid Grid.Row="1" ColumnDefinitions="0.85*,1.15*" ColumnSpacing="20" IsEnabled="{Binding CanEdit}">
             <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="*,*" RowSpacing="10" ColumnSpacing="10">

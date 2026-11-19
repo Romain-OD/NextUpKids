@@ -20,6 +20,7 @@ public partial class ChildRoutinePage : ContentPage
 	protected override void OnAppearing()
 	{
 		base.OnAppearing();
+		Buddy.IsSleeping = viewModel.IsDimmed;
 		viewModel.PropertyChanged += OnFrameChanged;
 	}
 
@@ -36,10 +37,14 @@ public partial class ChildRoutinePage : ContentPage
 		if (e.PropertyName == nameof(ChildRoutineViewModel.IsCelebrating) && viewModel.IsCelebrating)
 		{
 			try { HapticFeedback.Default.Perform(HapticFeedbackType.Click); } catch { /* no vibrator */ }
+			Buddy.Cheer();
 			if (!Motion.IsReduced) Sparkles.Burst();
 			return;
 		}
+		if (e.PropertyName == nameof(ChildRoutineViewModel.IsDimmed)) Buddy.IsSleeping = viewModel.IsDimmed;
 		if (e.PropertyName != nameof(ChildRoutineViewModel.Title)) return;
+		if (viewModel.HasStep) Buddy.Wave();
+		else Buddy.Cheer();
 		FrameContent.Opacity = 0.4;
 		if (Motion.IsReduced)
 		{

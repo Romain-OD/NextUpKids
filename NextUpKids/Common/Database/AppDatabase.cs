@@ -20,6 +20,25 @@ public sealed class AppDatabase(string path) : IAsyncDisposable
 			await connection.CreateTableAsync<AppSettings>().ConfigureAwait(false);
 			await connection.CreateTableAsync<PeriodSetting>().ConfigureAwait(false);
 			await connection.CreateTableAsync<RoutineStep>().ConfigureAwait(false);
+			// Seeded once, also for installs that predate activities; deleting them later must not bring them back.
+			var newActivities = await connection.CreateTableAsync<EventRoutine>().ConfigureAwait(false) == CreateTableResult.Created;
+			await connection.CreateTableAsync<EventStep>().ConfigureAwait(false);
+			await connection.CreateTableAsync<CalendarEvent>().ConfigureAwait(false);
+			if (newActivities)
+				await connection.RunInTransactionAsync(db =>
+				{
+					Add("Hockey", "hockey.png", ("S'habiller", "dress.png"), ("Aller aux toilettes", "toilet.png"), ("Mettre ses chaussures", "shoes.png"));
+					Add("Coucher", "sleep.png", ("Aller aux toilettes", "toilet.png"), ("Aller au lit", "sleep.png"));
+					Add("Piscine", "swimming.png", ("Mettre son maillot de bain", "swimming.png"), ("Aller aux toilettes", "toilet.png"), ("Mettre ses chaussures", "shoes.png"));
+
+					void Add(string title, string image, params (string Title, string Image)[] steps)
+					{
+						var routine = new EventRoutine { Title = title, Image = image };
+						db.Insert(routine);
+						for (var i = 0; i < steps.Length; i++)
+							db.Insert(new EventStep { RoutineId = routine.Id, Order = i, Title = steps[i].Title, Image = steps[i].Image });
+					}
+				}).ConfigureAwait(false);
 			await connection.RunInTransactionAsync(db =>
 			{
 				if (db.Find<AppSettings>(1) is not null)

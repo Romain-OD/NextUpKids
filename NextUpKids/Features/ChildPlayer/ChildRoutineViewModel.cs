@@ -16,6 +16,7 @@ public partial class ChildRoutineViewModel : ObservableObject, IDisposable
 	CancellationTokenSource playback = new();
 	List<RoutineStep> steps = [];
 	PeriodStartedMessage? period;
+	EventRoutine? activity;
 	VoiceMode mode;
 	int index;
 	bool active = true;
@@ -69,13 +70,29 @@ public partial class ChildRoutineViewModel : ObservableObject, IDisposable
 		{
 			var db = await database.ConnectionAsync();
 			var day = next.Day.DayOfWeek;
-			var loaded = await db.Table<RoutineStep>().Where(s => s.Day == day && s.Period == next.Period).OrderBy(s => s.Order).ToListAsync();
+			List<RoutineStep> loaded;
+			EventRoutine? loadedActivity = null;
+			VoiceMode loadedMode;
+			if (next.EventId > 0)
+			{
+				if (await db.FindAsync<CalendarEvent>(next.EventId) is { } calendarEvent)
+					loadedActivity = await db.FindAsync<EventRoutine>(calendarEvent.RoutineId);
+				var routineId = loadedActivity?.Id ?? -1;
+				loaded = (await db.Table<EventStep>().Where(s => s.RoutineId == routineId).OrderBy(s => s.Order).ToListAsync())
+					.Select(s => new RoutineStep { Title = s.Title, Image = s.Image }).ToList();
+				loadedMode = VoiceMode.On;
+			}
+			else
+			{
+				loaded = await db.Table<RoutineStep>().Where(s => s.Day == day && s.Period == next.Period).OrderBy(s => s.Order).ToListAsync();
+				loadedMode = (await db.FindAsync<PeriodSetting>(next.Period)).Voice;
+			}
 			var settings = await db.FindAsync<AppSettings>(1);
-			var periodSettings = await db.FindAsync<PeriodSetting>(next.Period);
 			token.ThrowIfCancellationRequested();
 			steps = loaded;
+			activity = loadedActivity;
 			Language = settings.Language;
-			mode = periodSettings.Voice;
+			mode = loadedMode;
 			index = 0;
 			IsLoading = false;
 			await ShowFrameAsync(token);
@@ -134,9 +151,11 @@ public partial class ChildRoutineViewModel : ObservableObject, IDisposable
 	{
 		token.ThrowIfCancellationRequested();
 		HasStep = index < steps.Count;
-		IsDimmed = !HasStep && period?.Period == Period.Bedtime;
-		Title = HasStep ? steps[index].Title : Phrases.Ending(period?.Period ?? Period.AfterSchool, Language);
-		Image = HasStep ? steps[index].Image : period?.Period switch
+		IsDimmed = !HasStep && activity is null && period?.Period == Period.Bedtime;
+		Title = HasStep ? steps[index].Title
+			: activity is not null ? Phrases.EventReady(Language)
+			: Phrases.Ending(period?.Period ?? Period.AfterSchool, Language);
+		Image = HasStep ? steps[index].Image : activity?.Image ?? period?.Period switch
 		{
 			Period.Mealtime => "meal.png",
 			Period.Bedtime => "sleep.png",

@@ -6,6 +6,21 @@ namespace NextUpKids.Tests.Common;
 public class AppDatabaseTests
 {
 	[Fact]
+	public async Task Activities_are_seeded_once_with_their_subtasks()
+	{
+		await using var scope = new TestDatabase();
+		var connection = await scope.Database.ConnectionAsync();
+		var hockey = await connection.Table<EventRoutine>().FirstAsync(r => r.Title == "Hockey");
+		(await connection.Table<EventStep>().Where(s => s.RoutineId == hockey.Id).OrderBy(s => s.Order).ToListAsync())
+			.Select(s => s.Title).Should().Equal("S'habiller", "Aller aux toilettes", "Mettre ses chaussures");
+		(await connection.Table<EventRoutine>().CountAsync()).Should().Be(3);
+		await connection.DeleteAllAsync<EventRoutine>();
+
+		await using var reopened = new AppDatabase(scope.Path);
+		(await (await reopened.ConnectionAsync()).Table<EventRoutine>().CountAsync()).Should().Be(0);
+	}
+
+	[Fact]
 	public async Task Seed_is_persistent_and_not_recreated_after_deletion()
 	{
 		await using var scope = new TestDatabase();

@@ -19,7 +19,10 @@
                     </DataTrigger>
                 </Label.Triggers>
             </Label>
-            <Border x:Name="StepCard" Grid.Row="1" BackgroundColor="{StaticResource White}"
+            <!-- Nino points at the card; the card stays centred on screen. -->
+            <Grid Grid.Row="1" ColumnDefinitions="*,1.5*,*" ColumnSpacing="12">
+            <local:ComicBuddyView x:Name="Buddy" Margin="0,8,0,0" />
+            <Border x:Name="StepCard" Grid.Column="1" BackgroundColor="{StaticResource White}"
                     StrokeShape="RoundRectangle 32" Padding="12" HorizontalOptions="Center">
                 <Border.Shadow>
                     <Shadow Brush="{StaticResource Swan}" Offset="0,6" Radius="0" Opacity="1" />
@@ -34,6 +37,7 @@
                              SemanticProperties.Description="{Binding Title}"
                              SemanticProperties.Hint="Toucher pour terminer cette étape" />
             </Border>
+            </Grid>
             <Grid Grid.Row="2" ColumnDefinitions="90,*,90" ColumnSpacing="18">
                 <ImageButton Source="speaker.png" Command="{Binding ReplayCommand}" HeightRequest="70"
                              BackgroundColor="{StaticResource Sky}" CornerRadius="22" Padding="14" AutomationId="ReplayButton"

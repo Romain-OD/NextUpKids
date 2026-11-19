@@ -17,9 +17,10 @@ public partial class App : Application
 	readonly IMessenger messenger;
 	readonly IVoiceService voice;
 	readonly IMediaPicker media;
+	readonly EventPlannerViewModel events;
 
 	public App(ChildRoutineViewModel child, ParentDashboardViewModel planner, ParentGateViewModel gate,
-		ScheduleMonitorService scheduler, IMessenger messenger, IVoiceService voice, IMediaPicker media)
+		ScheduleMonitorService scheduler, IMessenger messenger, IVoiceService voice, IMediaPicker media, EventPlannerViewModel events)
 	{
 		InitializeComponent();
 		UserAppTheme = AppTheme.Light;
@@ -30,11 +31,12 @@ public partial class App : Application
 		this.messenger = messenger;
 		this.voice = voice;
 		this.media = media;
+		this.events = events;
 	}
 
 	protected override Window CreateWindow(IActivationState? activationState)
 	{
-		var shell = new AppShell(child, planner, gate, scheduler, messenger, voice, media);
+		var shell = new AppShell(child, planner, gate, scheduler, messenger, voice, media, events);
 		var window = new Window(shell);
 		window.Activated += async (sender, args) =>
 		{

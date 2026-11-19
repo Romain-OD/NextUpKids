@@ -27,6 +27,37 @@ public sealed class RoutineStep
 	public string Image { get; set; } = "play.png";
 }
 
+// A reusable activity ("Hockey") with its own ordered subtasks, played when a dated CalendarEvent starts.
+public sealed class EventRoutine
+{
+	[PrimaryKey, AutoIncrement]
+	public int Id { get; set; }
+	public string Title { get; set; } = "";
+	public string Image { get; set; } = "play.png";
+}
+
+public sealed class EventStep
+{
+	[PrimaryKey, AutoIncrement]
+	public int Id { get; set; }
+	[Indexed]
+	public int RoutineId { get; set; }
+	public int Order { get; set; }
+	public string Title { get; set; } = "";
+	public string Image { get; set; } = "play.png";
+}
+
+public sealed class CalendarEvent
+{
+	[PrimaryKey, AutoIncrement]
+	public int Id { get; set; }
+	[Indexed]
+	public int RoutineId { get; set; }
+	// Local wall-clock time.
+	[Indexed]
+	public DateTime Start { get; set; }
+}
+
 public sealed class AppSettings
 {
 	[PrimaryKey]

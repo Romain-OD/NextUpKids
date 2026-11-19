@@ -1,0 +1,159 @@
+<ContentPage x:Class="NextUpKids.Features.WeeklyPlanner.EventPlannerPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:NextUpKids.Features.WeeklyPlanner"
+             xmlns:data="clr-namespace:NextUpKids.Common.Database"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:DataType="local:EventPlannerViewModel" BackgroundColor="{StaticResource Cloud}" Title="Activités et calendrier">
+    <ContentPage.Resources>
+        <toolkit:IsStringNotNullOrEmptyConverter x:Key="HasText" />
+        <DataTemplate x:Key="IconTemplate" x:DataType="local:IconChoice">
+            <VerticalStackLayout WidthRequest="80" Padding="4">
+                <VisualStateManager.VisualStateGroups>
+                    <VisualStateGroup Name="CommonStates">
+                        <VisualState Name="Normal">
+                            <VisualState.Setters><Setter Property="BackgroundColor" Value="Transparent" /></VisualState.Setters>
+                        </VisualState>
+                        <VisualState Name="Selected">
+                            <VisualState.Setters><Setter Property="BackgroundColor" Value="{StaticResource Selected}" /></VisualState.Setters>
+                        </VisualState>
+                    </VisualStateGroup>
+                </VisualStateManager.VisualStateGroups>
+                <Image Source="{Binding Image}" HeightRequest="56" Aspect="AspectFit" />
+                <Label Text="{Binding Title}" FontSize="13" HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
+        </DataTemplate>
+    </ContentPage.Resources>
+    <Grid Padding="20,12" RowDefinitions="Auto,*" RowSpacing="12">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+            <Label Text="Activités et calendrier" FontSize="26" FontFamily="NunitoBold" VerticalOptions="Center" />
+            <Label Grid.Column="1" Text="{Binding Error}" TextColor="{StaticResource ErrorText}" FontFamily="NunitoBold"
+                   HorizontalTextAlignment="End" VerticalOptions="Center" LineBreakMode="TailTruncation" AutomationId="EventsError"
+                   IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
+            <Label Grid.Column="1" Text="{Binding Status, StringFormat='✓ {0}'}" TextColor="{StaticResource SuccessText}" FontFamily="NunitoBold"
+                   HorizontalTextAlignment="End" VerticalOptions="Center" LineBreakMode="TailTruncation" AutomationId="EventsStatus"
+                   IsVisible="{Binding Status, Converter={StaticResource HasText}}" />
+            <Button Grid.Column="2" Text="Retour" Style="{StaticResource QuietButton}" Clicked="OnClose" AutomationId="CloseEvents" />
+        </Grid>
+        <Grid Grid.Row="1" ColumnDefinitions="0.85*,1.15*" ColumnSpacing="20" IsEnabled="{Binding CanEdit}">
+            <ScrollView>
+            <VerticalStackLayout Spacing="8" Padding="0,0,0,24">
+                <Label Text="Activités" FontSize="20" FontFamily="NunitoBold" />
+                <CollectionView ItemsSource="{Binding Routines}" SelectionMode="Single" HeightRequest="112"
+                                SelectedItem="{Binding SelectedRoutine}" AutomationId="RoutinesList"
+                                EmptyView="Aucune activité. Créez-en une.">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="data:EventRoutine">
+                            <VerticalStackLayout Padding="6" WidthRequest="110" Spacing="2">
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup Name="CommonStates">
+                                        <VisualState Name="Normal">
+                                            <VisualState.Setters><Setter Property="BackgroundColor" Value="Transparent" /></VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState Name="Selected">
+                                            <VisualState.Setters><Setter Property="BackgroundColor" Value="{StaticResource Selected}" /></VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <Image Source="{Binding Image}" HeightRequest="56" Aspect="AspectFit" />
+                                <Label Text="{Binding Title}" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation" />
+                            </VerticalStackLayout>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+                <Button Text="+ Nouvelle activité" Padding="6,10" Command="{Binding NewRoutineCommand}" AutomationId="NewRoutine" />
+                <Label Text="Calendrier à venir" FontSize="20" FontFamily="NunitoBold" />
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Upcoming}" AutomationId="UpcomingList">
+                    <BindableLayout.EmptyView>
+                        <Label Text="Rien de prévu. Choisissez une activité puis une date." />
+                    </BindableLayout.EmptyView>
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="local:UpcomingEvent">
+                            <Grid Padding="6" ColumnDefinitions="36,*,Auto" ColumnSpacing="8">
+                                <Image Source="{Binding Image}" HeightRequest="32" Aspect="AspectFit" />
+                                <Label Grid.Column="1" Text="{Binding Text}" VerticalOptions="Center" LineBreakMode="TailTruncation" />
+                                <Button Grid.Column="2" Text="✕" Padding="14,4" MinimumHeightRequest="44" Style="{StaticResource QuietButton}"
+                                        Command="{Binding DeleteEventCommand, Source={RelativeSource AncestorType={x:Type local:EventPlannerViewModel}}, x:DataType=local:EventPlannerViewModel}"
+                                        CommandParameter="{Binding .}" SemanticProperties.Description="Retirer du calendrier" />
+                            </Grid>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+            </ScrollView>
+            <ScrollView Grid.Column="1">
+                <VerticalStackLayout Spacing="12" Padding="0,0,8,24">
+                    <Label Text="{Binding RoutineEditorTitle}" FontSize="20" FontFamily="NunitoBold" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                        <Image Source="{Binding RoutineImage}" HeightRequest="56" WidthRequest="56" Aspect="AspectFit" />
+                        <Entry Grid.Column="1" Text="{Binding RoutineTitle}" Placeholder="Nom (ex. Hockey)" MaxLength="60"
+                               ReturnType="Done" AutomationId="RoutineTitleEntry" SemanticProperties.Description="Nom de l'activité" />
+                    </Grid>
+                    <CollectionView ItemsSource="{x:Static local:EventPlannerViewModel.Icons}" SelectionMode="Single"
+                                    SelectedItem="{Binding RoutineIcon, Mode=OneWay}" SelectionChanged="OnRoutineIconSelected" HeightRequest="105"
+                                    ItemTemplate="{StaticResource IconTemplate}" AutomationId="RoutineIcons">
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />
+                        </CollectionView.ItemsLayout>
+                    </CollectionView>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Text="Enregistrer l'activité" Command="{Binding SaveRoutineCommand}" AutomationId="SaveRoutine" />
+                        <Button Grid.Column="1" Text="Supprimer" Clicked="OnDeleteRoutine" Style="{StaticResource DangerButton}"
+                                IsVisible="{Binding HasRoutine}" AutomationId="DeleteRoutine" />
+                    </Grid>
+                    <VerticalStackLayout Spacing="12" IsVisible="{Binding HasRoutine}">
+                        <BoxView HeightRequest="1" Color="{StaticResource Swan}" />
+                        <Label Text="Étapes de l'activité" FontFamily="NunitoBold" />
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Steps}" Spacing="4" AutomationId="EventSteps">
+                            <BindableLayout.EmptyView>
+                                <Label Text="Aucune étape. Ajoutez-en ci-dessous." />
+                            </BindableLayout.EmptyView>
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="data:EventStep">
+                                    <Grid ColumnDefinitions="48,*,Auto,Auto" ColumnSpacing="8">
+                                        <Image Source="{Binding Image}" HeightRequest="44" Aspect="AspectFit" />
+                                        <Label Grid.Column="1" Text="{Binding Title}" VerticalOptions="Center" />
+                                        <Button Grid.Column="2" Text="↑" Padding="14,4" MinimumHeightRequest="44" Style="{StaticResource QuietButton}"
+                                                Command="{Binding MoveStepUpCommand, Source={RelativeSource AncestorType={x:Type local:EventPlannerViewModel}}, x:DataType=local:EventPlannerViewModel}"
+                                                CommandParameter="{Binding .}" SemanticProperties.Description="Monter" />
+                                        <Button Grid.Column="3" Text="✕" Padding="14,4" MinimumHeightRequest="44" Style="{StaticResource QuietButton}"
+                                                Command="{Binding RemoveStepCommand, Source={RelativeSource AncestorType={x:Type local:EventPlannerViewModel}}, x:DataType=local:EventPlannerViewModel}"
+                                                CommandParameter="{Binding .}" SemanticProperties.Description="Supprimer l'étape" />
+                                    </Grid>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                            <Image Source="{Binding NewStepImage}" HeightRequest="48" WidthRequest="48" Aspect="AspectFit" />
+                            <Entry Grid.Column="1" Text="{Binding NewStepTitle}" Placeholder="Nouvelle étape (ex. Mettre ses chaussures)"
+                                   MaxLength="140" ReturnType="Done" Completed="OnAddStep" AutomationId="EventStepEntry" />
+                            <Button Grid.Column="2" Text="Ajouter" Clicked="OnAddStep" AutomationId="AddEventStep" />
+                        </Grid>
+                        <CollectionView ItemsSource="{x:Static local:EventPlannerViewModel.Icons}" SelectionMode="Single"
+                                        SelectedItem="{Binding StepIcon, Mode=OneWay}" SelectionChanged="OnStepIconSelected" HeightRequest="105"
+                                        ItemTemplate="{StaticResource IconTemplate}">
+                            <CollectionView.ItemsLayout>
+                                <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />
+                            </CollectionView.ItemsLayout>
+                        </CollectionView>
+                        <BoxView HeightRequest="1" Color="{StaticResource Swan}" />
+                        <Label Text="Ajouter au calendrier" FontFamily="NunitoBold" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <DatePicker Date="{Binding EventDate}" MinimumDate="{Binding Today}" Format="dddd d MMMM" AutomationId="EventDate" />
+                            <TimePicker Grid.Column="1" Time="{Binding EventTime}" Format="HH:mm" AutomationId="EventTime" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Label Text="{Binding RepeatWeeks, StringFormat='Répéter : {0} semaine(s)'}" VerticalOptions="Center" />
+                            <Stepper Grid.Column="1" Minimum="1" Maximum="52" Increment="1" Value="{Binding RepeatWeeks}" AutomationId="RepeatWeeks" />
+                        </Grid>
+                        <Button Text="Ajouter au calendrier" Style="{StaticResource SkyButton}" Command="{Binding ScheduleCommand}" AutomationId="ScheduleEvent" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </ScrollView>
+        </Grid>
+        <ActivityIndicator Grid.Row="1" IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" InputTransparent="True" />
+    </Grid>
+</ContentPage>

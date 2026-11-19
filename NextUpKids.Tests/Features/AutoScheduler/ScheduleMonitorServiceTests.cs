@@ -63,6 +63,24 @@ public class ScheduleMonitorServiceTests
 	}
 
 	[Fact]
+	public async Task Dated_event_overrides_the_daily_period_until_a_later_period_starts()
+	{
+		await using var scope = new TestDatabase();
+		var clock = new FakeTimeProvider(new DateTimeOffset(2026, 11, 16, 17, 5, 0, TimeSpan.Zero));
+		using var monitor = new ScheduleMonitorService(scope.Database, clock, new WeakReferenceMessenger(), NullLogger<ScheduleMonitorService>.Instance);
+		var db = await scope.Database.ConnectionAsync();
+		var hockey = await db.Table<EventRoutine>().FirstAsync(r => r.Title == "Hockey");
+		var empty = new EventRoutine { Title = "Vide" };
+		await db.InsertAsync(empty);
+		var calendarEvent = new CalendarEvent { RoutineId = hockey.Id, Start = new DateTime(2026, 11, 16, 17, 0, 0) };
+		await db.InsertAllAsync(new[] { calendarEvent, new CalendarEvent { RoutineId = empty.Id, Start = new DateTime(2026, 11, 16, 17, 2, 0) } });
+
+		(await monitor.GetCurrentAsync()).Should().Be(new PeriodStartedMessage(new DateOnly(2026, 11, 16), Period.AfterSchool, calendarEvent.Id));
+		clock.Advance(TimeSpan.FromHours(1));
+		(await monitor.GetCurrentAsync()).Should().Be(new PeriodStartedMessage(new DateOnly(2026, 11, 16), Period.Mealtime));
+	}
+
+	[Fact]
 	public async Task Schedule_changes_use_local_time_and_midnight_keeps_the_previous_day()
 	{
 		await using var scope = new TestDatabase();
