@@ -23,7 +23,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<MauiIcon Include="Common\Resources\AppIcon\appicon.svg" ForegroundFile="Common\Resources\AppIcon\appiconfg.svg" ForegroundScale="0.8" Color="#7357E8" />
+		<MauiIcon Include="Common\Resources\AppIcon\appicon.svg" ForegroundFile="Common\Resources\AppIcon\appiconfg.svg" ForegroundScale="0.7" Color="#7357E8" />
 		<MauiSplashScreen Include="Common\Resources\Splash\splash.svg" Color="#7357E8" BaseSize="128,128" />
 		<MauiImage Include="Common\Resources\Images\*.svg" BaseSize="512,512" />
 		<MauiFont Include="Common\Resources\Fonts\*.ttf" />

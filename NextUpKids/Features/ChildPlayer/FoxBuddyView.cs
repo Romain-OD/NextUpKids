@@ -3,7 +3,7 @@ using System.Diagnostics;
 namespace NextUpKids.Features.ChildPlayer;
 
 /// <summary>
-/// "Filou", a comic fox drawn in code that shows the child how to do the current step:
+/// "Filou", a storybook fox drawn in code (soft shading, fur tufts, amber eyes) that shows the child how to do the current step:
 /// it waves when a step appears, then acts it out from the step illustration (brushing teeth,
 /// putting shoes on...), jumps and cheers when the step is done, and sleeps at bedtime.
 /// </summary>
@@ -13,11 +13,16 @@ public sealed class FoxBuddyView : GraphicsView, IDrawable
 
 	enum Act { Point, Brush, Shower, Dress, Pajamas, Coat, Toilet, Shoes, Wash, Eat, Write, Read, Comb, Backpack, Tidy, Play, Hockey, Swim, Skate, Sleep }
 
-	static readonly Color Ink = Color.FromArgb("#2B2D42");
-	static readonly Color Fur = Color.FromArgb("#F07E2A");
-	static readonly Color FurShade = Color.FromArgb("#D4651A");
-	static readonly Color Cream = Color.FromArgb("#FFF3E0");
-	static readonly Color Paw = Color.FromArgb("#5A3A22");
+	// Warm brown line work instead of a black comic outline.
+	static readonly Color Ink = Color.FromArgb("#3A2418");
+	static readonly Color Fur = Color.FromArgb("#E8742A");
+	static readonly Color FurLight = Color.FromArgb("#F9A55A");
+	static readonly Color FurShade = Color.FromArgb("#B9521A");
+	static readonly Color Cream = Color.FromArgb("#FFF8EE");
+	static readonly Color CreamShade = Color.FromArgb("#EBD9C4");
+	static readonly Color Paw = Color.FromArgb("#3B2519");
+	static readonly Color Stocking = Color.FromArgb("#5B3726");
+	static readonly Color Iris = Color.FromArgb("#E3A032");
 	static readonly Color Cheek = Color.FromArgb("#FF9AA2");
 	static readonly Color Mouth = Color.FromArgb("#C7253E");
 	static readonly Color Water = Color.FromArgb("#1CB0F6");
@@ -28,7 +33,7 @@ public sealed class FoxBuddyView : GraphicsView, IDrawable
 	static readonly Color Wood = Color.FromArgb("#B9773C");
 	static readonly Color Petal = Color.FromArgb("#FFB3D1");
 	// Extra width on the right leaves room for the pointing/waving paw.
-	const float ArtWidth = 230, ArtHeight = 300, Outline = 5;
+	const float ArtWidth = 230, ArtHeight = 300, Outline = 3.5f;
 
 	static readonly Dictionary<string, Act> Acts = new()
 	{
@@ -123,9 +128,14 @@ public sealed class FoxBuddyView : GraphicsView, IDrawable
 		var sit = doing switch { Act.Toilet => 22f, Act.Shoes => 26f, _ => 0f };
 		var sway = doing == Act.Skate ? MathF.Sin(t * 2.4f) * 14 : doing == Act.Backpack ? MathF.Sin(t * 5) * 3 : 0;
 
-		canvas.FillColor = Ink.WithAlpha(0.12f);
+		// Soft ground shadow: stacked ellipses fake a blur.
 		var shadow = 1 + jump / 90;
-		canvas.FillEllipse(100 - 60 * shadow + sway, 286, 120 * shadow, 14);
+		for (var i = 0; i < 4; i++)
+		{
+			canvas.FillColor = Ink.WithAlpha(0.05f);
+			var w = (130 - i * 14) * shadow;
+			canvas.FillEllipse(100 - w / 2 + sway, 284 + i * 1.5f, w, 18 - i * 3);
+		}
 
 		if (doing == Act.Tidy) ToyBox(canvas);
 		if (doing == Act.Toilet) Toilet(canvas);
@@ -139,10 +149,13 @@ public sealed class FoxBuddyView : GraphicsView, IDrawable
 
 		var (left, right) = Hands(current, doing, t, since);
 
-		// Body with a cream belly; outfits are drawn over it.
-		Shape(canvas, Fur, c => c.FillRoundedRectangle(60, 140, 80, 95, 30), c => c.DrawRoundedRectangle(60, 140, 80, 95, 30));
-		canvas.FillColor = Cream;
-		canvas.FillEllipse(76, 160, 48, 66);
+		// Shaded body with a tufted white chest; outfits are drawn over it.
+		var body = new PathF();
+		body.AppendRoundedRectangle(60, 140, 80, 95, 30);
+		Shaded(canvas, body, FurLight, FurShade);
+		Shaded(canvas, Chest(), Cream, CreamShade, outline: false);
+		canvas.FillColor = Ink.WithAlpha(0.18f);
+		canvas.FillEllipse(70, 136, 60, 14);
 		if (doing is Act.Dress or Act.Pajamas) Garment(canvas, doing, t);
 		if (doing == Act.Coat) Coat(canvas);
 
@@ -221,29 +234,38 @@ public sealed class FoxBuddyView : GraphicsView, IDrawable
 		canvas.SaveState();
 		canvas.Rotate(tilt, 100, 140);
 
-		// Pointy ears behind the head.
+		// Tall ears with black tips and a fluffy cream inside.
 		foreach (var flip in new[] { 1f, -1f })
 		{
-			var ear = Triangle(100 - 48 * flip, 76, 100 - 42 * flip, 14, 100 - 8 * flip, 50);
-			Shape(canvas, Fur, c => c.FillPath(ear), c => c.DrawPath(ear));
+			var ear = Triangle(100 - 50 * flip, 74, 100 - 46 * flip, 2, 100 - 10 * flip, 48);
+			Shaded(canvas, ear, FurLight, FurShade);
 			canvas.FillColor = Paw;
-			canvas.FillPath(Triangle(100 - 40 * flip, 60, 100 - 40 * flip, 26, 100 - 18 * flip, 48));
+			canvas.FillPath(Triangle(100 - 46 * flip, 2, 100 - 47.6f * flip, 31, 100 - 31.6f * flip, 21));
+			canvas.FillColor = CreamShade;
+			canvas.FillPath(Triangle(100 - 42 * flip, 64, 100 - 42 * flip, 30, 100 - 20 * flip, 48));
+			canvas.StrokeColor = Cream;
+			canvas.StrokeSize = 2;
+			for (var i = 0; i < 3; i++) canvas.DrawLine(100 - (38 - i * 5) * flip, 62, 100 - (34 - i * 3) * flip, 44 + i * 2);
+			canvas.StrokeColor = Ink;
+			canvas.DrawPath(ear);
+			canvas.StrokeSize = Outline;
 		}
-		Shape(canvas, Fur, c => c.FillEllipse(44, 40, 112, 102), c => c.DrawEllipse(44, 40, 112, 102));
+		Shaded(canvas, HeadShape(), FurLight, FurShade);
 
-		// Cream cheeks and muzzle.
-		var face = new PathF();
-		face.MoveTo(50, 104);
-		face.CurveTo(70, 92, 88, 98, 100, 108);
-		face.CurveTo(112, 98, 130, 92, 150, 104);
-		face.CurveTo(140, 132, 118, 142, 100, 142);
-		face.CurveTo(82, 142, 60, 132, 50, 104);
-		face.Close();
-		canvas.FillColor = Cream;
-		canvas.FillPath(face);
-		canvas.FillColor = Cheek.WithAlpha(0.6f);
-		canvas.FillEllipse(58, 106, 18, 10);
-		canvas.FillEllipse(124, 106, 18, 10);
+		// Darker fur around the eyes and a lighter forehead streak.
+		canvas.FillColor = FurShade.WithAlpha(0.35f);
+		canvas.FillEllipse(62, 70, 34, 30);
+		canvas.FillEllipse(104, 70, 34, 30);
+		canvas.FillColor = FurLight.WithAlpha(0.6f);
+		canvas.FillEllipse(90, 46, 20, 34);
+
+		// White cheek ruffs and muzzle.
+		Shaded(canvas, FaceShape(), Cream, CreamShade, outline: false);
+		canvas.FillColor = Cheek.WithAlpha(0.3f);
+		canvas.FillEllipse(56, 108, 18, 10);
+		canvas.FillEllipse(126, 108, 18, 10);
+		canvas.FillColor = Ink.WithAlpha(0.5f);
+		foreach (var (wx, wy) in new[] { (84f, 118f), (80f, 124f), (116f, 118f), (120f, 124f) }) canvas.FillCircle(wx, wy, 1.4f);
 
 		var blink = !still && t % 3.2 > 3.08;
 		var closed = doing == Act.Sleep || current == Mood.Cheer || (doing == Act.Shower && current == Mood.Idle);
@@ -270,16 +292,21 @@ public sealed class FoxBuddyView : GraphicsView, IDrawable
 					canvas.DrawLine(x + 2, 88, x + 18, 88);
 					continue;
 				}
-				Shape(canvas, Colors.White, c => c.FillEllipse(x, 72, 20, 26), c => c.DrawEllipse(x, 72, 20, 26));
-				canvas.FillColor = Ink;
-				canvas.FillEllipse(x + 5 + lx, 79 + ly, 11, 14);
-				canvas.FillColor = Colors.White;
-				canvas.FillCircle(x + 9 + lx, 83 + ly, 2.5f);
+				Eye(canvas, x + 10, 86, lx, ly, x < 100);
 			}
 		}
 
-		canvas.FillColor = Ink;
-		canvas.FillEllipse(92, 104, 16, 11);
+		// Shiny black nose at the tip of the muzzle.
+		var nose = new PathF();
+		nose.MoveTo(91, 104);
+		nose.CurveTo(96, 100, 104, 100, 109, 104);
+		nose.CurveTo(108, 111, 103, 115, 100, 115);
+		nose.CurveTo(97, 115, 92, 111, 91, 104);
+		nose.Close();
+		canvas.FillColor = Color.FromArgb("#1E120B");
+		canvas.FillPath(nose);
+		canvas.FillColor = Colors.White.WithAlpha(0.7f);
+		canvas.FillEllipse(95, 104, 6, 3);
 		if (current == Mood.Cheer || doing == Act.Eat && EatHand(t).Y < 140)
 		{
 			Shape(canvas, Mouth, c => c.FillArc(86, 112, 28, 22, 180, 360, false), c => c.DrawArc(86, 112, 28, 22, 180, 360, false, true));
@@ -307,23 +334,136 @@ public sealed class FoxBuddyView : GraphicsView, IDrawable
 		canvas.StrokeSize = Outline;
 	}
 
+	// Almond fox eye: dark rim, amber iris, slit pupil and two catch-lights.
+	static void Eye(ICanvas canvas, float cx, float cy, float lx, float ly, bool left)
+	{
+		var lid = new PathF();
+		var outer = left ? -13f : 13f;
+		lid.MoveTo(cx - outer, cy + 2);
+		lid.CurveTo(cx - outer * 0.4f, cy - 12, cx + outer * 0.6f, cy - 12, cx + outer, cy - 3);
+		lid.CurveTo(cx + outer * 0.5f, cy + 11, cx - outer * 0.5f, cy + 11, cx - outer, cy + 2);
+		lid.Close();
+		canvas.FillColor = Ink;
+		canvas.FillPath(lid);
+		canvas.SaveState();
+		canvas.ClipPath(lid);
+		var (ix, iy) = (cx + lx * 0.7f, cy + ly * 0.6f);
+		canvas.SaveState();
+		canvas.SetFillPaint(new RadialGradientPaint { StartColor = Color.FromArgb("#FFD27A"), EndColor = Color.FromArgb("#B86E14"), Center = new Point(0.45, 0.35), Radius = 0.6 }, new RectF(ix - 9, iy - 9, 18, 18));
+		canvas.FillCircle(ix, iy, 8.5f);
+		canvas.RestoreState();
+		canvas.FillColor = Color.FromArgb("#140B06");
+		canvas.FillEllipse(ix - 2.6f, iy - 7, 5.2f, 14);
+		canvas.FillColor = Colors.White;
+		canvas.FillCircle(ix + 2.5f, iy - 3.5f, 2.6f);
+		canvas.FillCircle(ix - 3, iy + 3.5f, 1.2f);
+		canvas.RestoreState();
+		canvas.StrokeColor = Ink;
+		canvas.StrokeSize = Outline;
+	}
+
+	// Rounded skull flaring into fluffy cheek tufts, narrowing to the chin.
+	static PathF HeadShape()
+	{
+		var head = new PathF();
+		head.MoveTo(100, 38);
+		head.CurveTo(130, 38, 152, 56, 154, 84);
+		head.CurveTo(160, 96, 166, 104, 172, 112);
+		head.LineTo(158, 114);
+		head.LineTo(165, 124);
+		head.LineTo(148, 124);
+		head.CurveTo(136, 140, 116, 150, 100, 150);
+		head.CurveTo(84, 150, 64, 140, 52, 124);
+		head.LineTo(35, 124);
+		head.LineTo(42, 114);
+		head.LineTo(28, 112);
+		head.CurveTo(34, 104, 40, 96, 46, 84);
+		head.CurveTo(48, 56, 70, 38, 100, 38);
+		head.Close();
+		return head;
+	}
+
+	static PathF FaceShape()
+	{
+		var face = new PathF();
+		face.MoveTo(34, 112);
+		face.CurveTo(52, 104, 72, 100, 86, 102);
+		face.CurveTo(92, 96, 108, 96, 114, 102);
+		face.CurveTo(128, 100, 148, 104, 166, 112);
+		face.LineTo(154, 116);
+		face.LineTo(160, 123);
+		face.LineTo(147, 123);
+		face.CurveTo(135, 139, 116, 148, 100, 148);
+		face.CurveTo(84, 148, 65, 139, 53, 123);
+		face.LineTo(40, 123);
+		face.LineTo(46, 116);
+		face.Close();
+		return face;
+	}
+
+	static PathF Chest()
+	{
+		var chest = new PathF();
+		chest.MoveTo(72, 144);
+		chest.LineTo(128, 144);
+		chest.CurveTo(127, 172, 124, 200, 116, 224);
+		chest.LineTo(108, 216);
+		chest.LineTo(100, 228);
+		chest.LineTo(92, 216);
+		chest.LineTo(84, 224);
+		chest.CurveTo(76, 200, 73, 172, 72, 144);
+		chest.Close();
+		return chest;
+	}
+
+	// Soft light from the top-left gives the fur some volume.
+	static void Shaded(ICanvas canvas, PathF path, Color light, Color dark, bool outline = true)
+	{
+		// Save/Restore keeps the gradient from leaking into later fills (Android keeps the shader).
+		canvas.SaveState();
+		canvas.SetFillPaint(new RadialGradientPaint { StartColor = light, EndColor = dark, Center = new Point(0.35, 0.3), Radius = 0.85 }, path.Bounds);
+		canvas.FillPath(path);
+		canvas.RestoreState();
+		if (!outline) return;
+		canvas.StrokeColor = Ink;
+		canvas.StrokeSize = Outline;
+		canvas.DrawPath(path);
+	}
+
 	static void Tail(ICanvas canvas, float t, bool still)
 	{
 		canvas.SaveState();
 		canvas.Rotate(still ? 0 : MathF.Sin(t * 3) * 10, 72, 222);
+		// Big bushy tail with a tufted white tip.
 		var tail = new PathF();
-		tail.MoveTo(76, 226);
-		tail.CurveTo(30, 238, 4, 200, 14, 150);
-		tail.CurveTo(30, 170, 56, 186, 82, 206);
+		tail.MoveTo(80, 226);
+		tail.CurveTo(44, 248, 0, 222, 4, 176);
+		tail.CurveTo(4, 166, 6, 158, 10, 148);
+		tail.LineTo(16, 160);
+		tail.LineTo(20, 145);
+		tail.LineTo(28, 163);
+		tail.CurveTo(42, 184, 62, 196, 84, 204);
 		tail.Close();
-		Shape(canvas, Fur, c => c.FillPath(tail), c => c.DrawPath(tail));
+		Shaded(canvas, tail, FurLight, FurShade, outline: false);
 		var tip = new PathF();
-		tip.MoveTo(14, 150);
-		tip.CurveTo(8, 172, 12, 184, 20, 192);
-		tip.CurveTo(26, 178, 30, 168, 30, 166);
+		tip.MoveTo(4, 178);
+		tip.CurveTo(4, 166, 6, 158, 10, 148);
+		tip.LineTo(16, 160);
+		tip.LineTo(20, 145);
+		tip.LineTo(28, 163);
+		tip.CurveTo(32, 172, 32, 182, 28, 190);
+		tip.LineTo(22, 184);
+		tip.LineTo(18, 194);
+		tip.LineTo(12, 186);
 		tip.Close();
-		canvas.FillColor = Cream;
-		canvas.FillPath(tip);
+		Shaded(canvas, tip, Cream, CreamShade, outline: false);
+		canvas.StrokeColor = FurLight.WithAlpha(0.8f);
+		canvas.StrokeSize = 2;
+		canvas.DrawArc(20, 196, 46, 30, 200, 260, false, false);
+		canvas.DrawArc(30, 204, 40, 24, 200, 250, false, false);
+		canvas.StrokeColor = Ink;
+		canvas.StrokeSize = Outline;
+		canvas.DrawPath(tail);
 		canvas.RestoreState();
 	}
 
@@ -333,7 +473,10 @@ public sealed class FoxBuddyView : GraphicsView, IDrawable
 		{
 			var swing = doing == Act.Toilet ? MathF.Sin(t * 5 + i * MathF.PI) * 6 : 0;
 			var length = 48 - sit;
-			Shape(canvas, FurShade, c => c.FillRoundedRectangle(x, 224, 18, length, 6), c => c.DrawRoundedRectangle(x, 224, 18, length, 6));
+			// Dark "stockings" like a real fox.
+			var leg = new PathF();
+			leg.AppendRoundedRectangle(x, 224, 18, length, 6);
+			Shaded(canvas, leg, Stocking, Paw);
 			var y = 224 + length - 8 + swing;
 			Shape(canvas, Paw, c => c.FillEllipse(x - 6, y, 30, 16), c => c.DrawEllipse(x - 6, y, 30, 16));
 			if (doing == Act.Shoes)
@@ -363,6 +506,9 @@ public sealed class FoxBuddyView : GraphicsView, IDrawable
 		canvas.StrokeColor = Fur;
 		canvas.StrokeSize = 22 - Outline * 2;
 		canvas.DrawLine(x, y, hx, hy);
+		// The forearm darkens towards the paw.
+		canvas.StrokeColor = Stocking;
+		canvas.DrawLine(x + dx * 0.55f, y + dy * 0.55f, hx, hy);
 		canvas.StrokeColor = Ink;
 		canvas.StrokeSize = Outline;
 		Shape(canvas, Paw, c => c.FillCircle(hx, hy, 12), c => c.DrawCircle(hx, hy, 12));
