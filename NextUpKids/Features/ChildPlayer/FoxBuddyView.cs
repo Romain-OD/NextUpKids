@@ -60,6 +60,9 @@ public sealed class FoxBuddyView : GraphicsView, IDrawable
 		set { sleeping = value; Invalidate(); }
 	}
 
+	/// <summary>True when Filou can act out the step himself, so no picture card is needed.</summary>
+	public static bool CanAct(string? image) => Acts.ContainsKey(Path.GetFileNameWithoutExtension(image ?? "").ToLowerInvariant());
+
 	/// <summary>Waves hello, then demonstrates the step drawn by <paramref name="image"/>.</summary>
 	public void Show(string? image)
 	{
@@ -107,8 +110,8 @@ public sealed class FoxBuddyView : GraphicsView, IDrawable
 
 		var scale = MathF.Min(rect.Width / ArtWidth, rect.Height / ArtHeight);
 		canvas.SaveState();
-		// Feet on the bottom edge, leaning towards the card on the right.
-		canvas.Translate(rect.Right - ArtWidth * scale, rect.Bottom - ArtHeight * scale);
+		// Feet on the bottom edge, centred on the stage.
+		canvas.Translate(rect.Center.X - 100 * scale, rect.Bottom - ArtHeight * scale);
 		canvas.Scale(scale, scale);
 		canvas.StrokeColor = Ink;
 		canvas.StrokeSize = Outline;

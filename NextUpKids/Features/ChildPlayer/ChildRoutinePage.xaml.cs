@@ -24,6 +24,7 @@ public partial class ChildRoutinePage : ContentPage
 		base.OnAppearing();
 		Buddy.IsSleeping = viewModel.IsDimmed;
 		Buddy.Show(viewModel.HasStep ? viewModel.Image : null);
+		UpdateStage();
 		shownStars = viewModel.Stars;
 		viewModel.PropertyChanged += OnFrameChanged;
 		ticker ??= Dispatcher.CreateTimer();
@@ -43,6 +44,7 @@ public partial class ChildRoutinePage : ContentPage
 		StarBadge.CancelAnimations();
 		FrameContent.CancelAnimations();
 		StepCard.CancelAnimations();
+		Stage.CancelAnimations();
 		base.OnDisappearing();
 	}
 
@@ -72,13 +74,24 @@ public partial class ChildRoutinePage : ContentPage
 		if (e.PropertyName != nameof(ChildRoutineViewModel.Title)) return;
 		if (viewModel.HasStep) Buddy.Show(viewModel.Image);
 		else Buddy.Cheer();
+		UpdateStage();
 		FrameContent.Opacity = 0.4;
 		if (Motion.IsReduced)
 		{
 			await FrameContent.FadeToAsync(1, 150);
 			return;
 		}
-		StepCard.Scale = 0.85;
-		await Task.WhenAll(FrameContent.FadeToAsync(1, 180), StepCard.ScaleToAsync(1, 350, Easing.SpringOut));
+		View pop = StepCard.IsVisible ? StepCard : Stage;
+		pop.Scale = 0.85;
+		await Task.WhenAll(FrameContent.FadeToAsync(1, 180), pop.ScaleToAsync(1, 350, Easing.SpringOut));
+	}
+
+	// The picture card only shows for steps Filou cannot act out (e.g. a photo); the timer then moves aside.
+	void UpdateStage()
+	{
+		var card = viewModel.HasStep && !FoxBuddyView.CanAct(viewModel.Image);
+		StepCard.IsVisible = card;
+		Grid.SetColumn(Timer, card ? 1 : 0);
+		Grid.SetColumnSpan(Timer, card ? 1 : 2);
 	}
 }
