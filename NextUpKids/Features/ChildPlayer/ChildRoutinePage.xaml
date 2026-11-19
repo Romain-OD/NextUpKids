@@ -21,7 +21,7 @@
                 </ContentView.GestureRecognizers>
                 <local:FoxBuddyView x:Name="Buddy" />
             </ContentView>
-            <Label Grid.Column="1" Text="{Binding Title}" FontSize="34" FontFamily="NunitoBold" VerticalOptions="Center"
+            <Label x:Name="StepTitle" Grid.Column="1" Text="{Binding Title}" FontSize="34" FontFamily="NunitoBold" VerticalOptions="Center"
                    HorizontalTextAlignment="Center" Margin="0,0,112,0"
                    AutomationId="RoutineTitle">
                 <Label.Triggers>
@@ -42,7 +42,7 @@
                 </HorizontalStackLayout>
             </Border>
             <!-- A picture card only appears for steps Filou cannot act out, such as a parent's photo. -->
-            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,*" ColumnSpacing="12">
+            <Grid x:Name="StepInfo" Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,*" ColumnSpacing="12">
             <local:TimerRingView x:Name="Timer" Grid.ColumnSpan="2" Fraction="{Binding TimerFraction}" Text="{Binding TimerText}"
                                  IsVisible="{Binding HasTimer}" Margin="8,24" AutomationId="StepTimer" />
             <Border x:Name="StepCard" BackgroundColor="{StaticResource White}" IsVisible="False"

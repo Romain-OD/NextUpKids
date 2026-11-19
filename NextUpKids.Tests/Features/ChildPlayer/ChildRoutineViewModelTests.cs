@@ -69,6 +69,29 @@ public class ChildRoutineViewModelTests
 	}
 
 	[Fact]
+	public async Task Next_step_appears_after_the_cheer_and_its_title_is_spoken_once_the_praise_ends()
+	{
+		await using var scope = new TestDatabase();
+		var clock = new FakeTimeProvider();
+		var voice = Voice();
+		var praise = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+		voice.SpeakAsync("Bravo !", AppLanguage.French, VoiceMode.On, Arg.Any<CancellationToken>()).Returns(praise.Task);
+		using var vm = new ChildRoutineViewModel(scope.Database, voice, clock, new WeakReferenceMessenger());
+		await vm.SwitchPeriodAsync(new(new DateOnly(2026, 11, 16), Period.BeforeSchool));
+		clock.Advance(TimeSpan.FromHours(1));
+		var done = vm.DoneCommand.ExecuteAsync(null);
+		clock.Advance(TimeSpan.FromSeconds(1));
+		await Task.Delay(50, TestContext.Current.CancellationToken);
+
+		vm.Title.Should().Be("Prendre le petit déjeuner");
+		vm.IsCelebrating.Should().BeFalse();
+		await voice.DidNotReceive().SpeakAsync("Prendre le petit déjeuner", AppLanguage.French, VoiceMode.On, Arg.Any<CancellationToken>());
+		praise.SetResult(true);
+		await done.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+		await voice.Received(1).SpeakAsync("Prendre le petit déjeuner", AppLanguage.French, VoiceMode.On, Arg.Any<CancellationToken>());
+	}
+
+	[Fact]
 	public async Task Done_remains_available_during_the_next_instruction_and_cancels_it()
 	{
 		await using var scope = new TestDatabase();

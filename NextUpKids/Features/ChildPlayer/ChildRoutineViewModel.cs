@@ -167,14 +167,16 @@ public partial class ChildRoutineViewModel : ObservableObject, IDisposable
 		if (onTime) Stars++;
 		try
 		{
+			// The next step appears after a short cheer; only its spoken title waits for the praise to finish,
+			// so a long "Bravo ! Une étoile !" never leaves the screen empty.
+			var praise = SpeakAsync(onTime ? Phrases.StarPraise(Language) : Phrases.Praise(Language), token);
 			await Task.WhenAll(
-				SpeakAsync(onTime ? Phrases.StarPraise(Language) : Phrases.Praise(Language), token),
-				Task.Delay(TimeSpan.FromMilliseconds(900), time, token),
+				Task.Delay(TimeSpan.FromMilliseconds(700), time, token),
 				onTime ? SaveStarAsync() : Task.CompletedTask);
 			token.ThrowIfCancellationRequested();
 			index++;
 			IsCelebrating = false;
-			await ShowFrameAsync(token);
+			await ShowFrameAsync(token, praise);
 		}
 		catch (OperationCanceledException) when (token.IsCancellationRequested) { }
 		finally
@@ -183,7 +185,7 @@ public partial class ChildRoutineViewModel : ObservableObject, IDisposable
 		}
 	}
 
-	async Task ShowFrameAsync(CancellationToken token)
+	async Task ShowFrameAsync(CancellationToken token, Task? speakAfter = null)
 	{
 		token.ThrowIfCancellationRequested();
 		HasStep = index < steps.Count;
@@ -206,6 +208,8 @@ public partial class ChildRoutineViewModel : ObservableObject, IDisposable
 		HasTimer = seconds > 0;
 		Tick();
 		UpdateRewards();
+		if (speakAfter is not null) await speakAfter;
+		token.ThrowIfCancellationRequested();
 		await SpeakAsync(Title, token);
 	}
 

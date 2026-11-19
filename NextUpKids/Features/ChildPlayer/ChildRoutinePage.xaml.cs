@@ -25,6 +25,11 @@ public partial class ChildRoutinePage : ContentPage
 		Buddy.IsSleeping = viewModel.IsDimmed;
 		Buddy.Show(viewModel.HasStep ? viewModel.Image : null);
 		UpdateStage();
+		foreach (var view in StepViews)
+		{
+			view.Opacity = 1;
+			view.TranslationX = 0;
+		}
 		shownStars = viewModel.Stars;
 		viewModel.PropertyChanged += OnFrameChanged;
 		ticker ??= Dispatcher.CreateTimer();
@@ -45,6 +50,7 @@ public partial class ChildRoutinePage : ContentPage
 		FrameContent.CancelAnimations();
 		StepCard.CancelAnimations();
 		Stage.CancelAnimations();
+		foreach (var view in StepViews) view.CancelAnimations();
 		base.OnDisappearing();
 	}
 
@@ -63,11 +69,18 @@ public partial class ChildRoutinePage : ContentPage
 			}
 			return;
 		}
-		if (e.PropertyName == nameof(ChildRoutineViewModel.IsCelebrating) && viewModel.IsCelebrating)
+		if (e.PropertyName == nameof(ChildRoutineViewModel.IsCelebrating))
 		{
+			if (!viewModel.IsCelebrating)
+			{
+				// Fires just before the next step is set, so the new title and timer glide in.
+				SlideStepIn();
+				return;
+			}
 			try { HapticFeedback.Default.Perform(HapticFeedbackType.Click); } catch { /* no vibrator */ }
 			Buddy.Cheer();
 			if (!Motion.IsReduced) Sparkles.Burst();
+			SlideStepOut();
 			return;
 		}
 		if (e.PropertyName == nameof(ChildRoutineViewModel.IsDimmed)) Buddy.IsSleeping = viewModel.IsDimmed;
@@ -75,15 +88,38 @@ public partial class ChildRoutinePage : ContentPage
 		if (viewModel.HasStep) Buddy.Show(viewModel.Image);
 		else Buddy.Cheer();
 		UpdateStage();
-		FrameContent.Opacity = 0.4;
-		if (Motion.IsReduced)
-		{
-			await FrameContent.FadeToAsync(1, 150);
-			return;
-		}
+		if (Motion.IsReduced) return;
 		View pop = StepCard.IsVisible ? StepCard : Stage;
-		pop.Scale = 0.85;
-		await Task.WhenAll(FrameContent.FadeToAsync(1, 180), pop.ScaleToAsync(1, 350, Easing.SpringOut));
+		pop.Scale = 0.94;
+		await pop.ScaleToAsync(1, 420, Easing.SpringOut);
+	}
+
+	// The step text and timer leave while Filou celebrates, then the next step slides in from the right;
+	// Filou and the buttons stay put so the screen never flashes.
+	View[] StepViews => [StepTitle, StepInfo];
+
+	void SlideStepOut()
+	{
+		foreach (var view in StepViews)
+		{
+			_ = view.FadeToAsync(0, 200, Easing.CubicIn);
+			if (!Motion.IsReduced) _ = view.TranslateToAsync(-48, 0, 200, Easing.CubicIn);
+		}
+	}
+
+	void SlideStepIn()
+	{
+		foreach (var view in StepViews)
+		{
+			view.CancelAnimations();
+			if (!Motion.IsReduced)
+			{
+				view.TranslationX = 48;
+				_ = view.TranslateToAsync(0, 0, 320, Easing.CubicOut);
+			}
+			else view.TranslationX = 0;
+			_ = view.FadeToAsync(1, 260, Easing.CubicOut);
+		}
 	}
 
 	// The picture card only shows for steps Filou cannot act out (e.g. a photo); the timer then moves aside.
