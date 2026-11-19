@@ -104,8 +104,9 @@ public class ParentDashboardViewModelTests
 		vm.SelectedStep = vm.Steps[0];
 		vm.StepTitle = " ";
 		await vm.SaveStepCommand.ExecuteAsync(null);
-		vm.Error.Should().Be("Le titre doit contenir entre 1 et 140 caractères.");
+		vm.TitleError.Should().Be("Le titre doit contenir entre 1 et 140 caractères.");
 		vm.StepTitle = "Nouveau titre";
+		vm.TitleError.Should().BeEmpty();
 		vm.StepImage = "..\\private.png";
 		await vm.SaveStepCommand.ExecuteAsync(null);
 		vm.Error.Should().Be("Choisissez une illustration ou importez une photo.");
@@ -189,6 +190,38 @@ public class ParentDashboardViewModelTests
 		await vm.LoadAsync();
 		vm.LanguageIndex.Should().Be(0);
 		vm.VoiceIndex.Should().Be(0);
+	}
+
+	[Fact]
+	public async Task Successive_quick_adds_keep_existing_steps_and_confirm_each_change()
+	{
+		await using var scope = new TestDatabase();
+		var vm = Create(scope);
+		await vm.LoadAsync();
+		vm.ChooseIconCommand.Execute(IconCatalog.All.First(i => i.Image == "shower.png"));
+		vm.StepTitle.Should().Be("Douche");
+		vm.ChooseIconCommand.Execute(IconCatalog.All.First(i => i.Image == "hockey.png"));
+		vm.StepTitle.Should().Be("Hockey", "an auto-filled title follows the chosen icon");
+		vm.HasUnsavedChanges.Should().BeTrue();
+		await vm.SaveStepCommand.ExecuteAsync(null);
+		vm.Status.Should().Be("« Hockey » ajoutée.");
+		vm.IsEditing.Should().BeFalse("the form is ready for the next step");
+		vm.HasUnsavedChanges.Should().BeFalse();
+		vm.StepTitle = "Ranger le sac";
+		vm.ChooseIconCommand.Execute(IconCatalog.All.First(i => i.Image == "homework.png"));
+		vm.StepTitle.Should().Be("Ranger le sac", "a typed title is never replaced");
+		await vm.SaveStepCommand.ExecuteAsync(null);
+		vm.Steps.Select(s => s.Title).Should().Equal("S'habiller", "Prendre le petit déjeuner", "Se brosser les dents", "Hockey", "Ranger le sac");
+		vm.SelectedStep = vm.Steps[3];
+		vm.Category.Should().Be("Sports");
+		vm.HasUnsavedChanges.Should().BeFalse();
+		vm.StepTitle = "Hockey sur glace";
+		vm.HasUnsavedChanges.Should().BeTrue();
+		await vm.SaveStepCommand.ExecuteAsync(null);
+		vm.Status.Should().Be("« Hockey sur glace » modifiée.");
+		vm.SelectedStep = vm.Steps[3];
+		await vm.DeleteStepCommand.ExecuteAsync(null);
+		vm.Status.Should().Be("« Hockey sur glace » supprimée.");
 	}
 
 	[Fact]

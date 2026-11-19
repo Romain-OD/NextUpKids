@@ -25,11 +25,24 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 	public static IReadOnlyList<string> Categories { get; } = ["Hygiène", "Sports", "Vie quotidienne"];
 	public IReadOnlyList<IconChoice> Icons => IconCatalog.All.Where(i => i.Category == Category).ToArray();
 	public bool CanEdit => !IsBusy;
+	public bool IsEditing => SelectedStep is not null;
+	public string EditorTitle => IsEditing ? "Modifier l'étape" : "Nouvelle étape";
+	public string SaveText => IsEditing ? "Enregistrer" : "Ajouter l'étape";
+	public IconChoice? SelectedIcon => IconCatalog.All.FirstOrDefault(i => i.Image == StepImage);
+	public DayOfWeek Day => day;
+	public Period Period => period;
+	public bool HasUnsavedChanges =>
+		StepTitle.Trim() != (SelectedStep?.Title ?? "") || StepImage != (SelectedStep?.Image ?? DefaultImage);
+	const string DefaultImage = "play.png";
+	string autoTitle = "";
 
 	[ObservableProperty] public partial ObservableCollection<RoutineStep> Steps { get; set; } = [];
-	[ObservableProperty] public partial RoutineStep? SelectedStep { get; set; }
+	[ObservableProperty, NotifyPropertyChangedFor(nameof(IsEditing), nameof(EditorTitle), nameof(SaveText))]
+	public partial RoutineStep? SelectedStep { get; set; }
 	[ObservableProperty] public partial string StepTitle { get; set; } = "";
-	[ObservableProperty] public partial string StepImage { get; set; } = "play.png";
+	[ObservableProperty, NotifyPropertyChangedFor(nameof(SelectedIcon))]
+	public partial string StepImage { get; set; } = DefaultImage;
+	[ObservableProperty] public partial string TitleError { get; set; } = "";
 	[ObservableProperty] public partial string Error { get; set; } = "";
 	[ObservableProperty] public partial string Status { get; set; } = "";
 	[ObservableProperty] public partial TimeSpan StartTime { get; set; }
@@ -43,9 +56,14 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 
 	partial void OnSelectedStepChanged(RoutineStep? value)
 	{
+		autoTitle = "";
 		StepTitle = value?.Title ?? "";
-		StepImage = value?.Image ?? "play.png";
+		StepImage = value?.Image ?? DefaultImage;
+		TitleError = "";
+		if (value is not null && SelectedIcon is { } icon) Category = icon.Category;
 	}
+
+	partial void OnStepTitleChanged(string value) => TitleError = "";
 
 	public Task LoadAsync() => SelectAsync(DayOfWeek.Monday, Period.BeforeSchool);
 
@@ -78,14 +96,19 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 	void NewStep()
 	{
 		SelectedStep = null;
+		autoTitle = "";
 		StepTitle = "";
-		StepImage = "play.png";
+		StepImage = DefaultImage;
+		TitleError = "";
 	}
 
 	[RelayCommand]
 	void ChooseIcon(IconChoice? icon)
 	{
-		if (icon is not null && IconCatalog.All.Contains(icon)) StepImage = icon.Image;
+		if (icon is null || !IconCatalog.All.Contains(icon)) return;
+		StepImage = icon.Image;
+		// Quick preset: an empty (or previously auto-filled) title takes the icon name.
+		if (StepTitle.Trim().Length == 0 || StepTitle == autoTitle) StepTitle = autoTitle = icon.Title;
 	}
 
 	[RelayCommand]
@@ -94,7 +117,7 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 		var title = StepTitle.Trim();
 		if (title.Length is < 1 or > 140)
 		{
-			Error = "Le titre doit contenir entre 1 et 140 caractères.";
+			TitleError = "Le titre doit contenir entre 1 et 140 caractères.";
 			return;
 		}
 		var photos = Path.GetFullPath(Path.Combine(files.AppDataDirectory, "Photos")) + Path.DirectorySeparatorChar;
@@ -109,17 +132,18 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 		var edited = new RoutineStep { Id = SelectedStep?.Id ?? 0, Title = title, Image = StepImage, Day = day, Period = period };
 		if (existing < 0) items.Add(edited);
 		else items[existing] = edited;
-		await SaveStepsAsync(items);
+		await SaveStepsAsync(items, existing < 0 ? $"« {title} » ajoutée." : $"« {title} » modifiée.");
 	});
 
 	[RelayCommand]
 	Task DeleteStepAsync() => RunAsync(async () =>
 	{
 		if (SelectedStep is null) return;
+		var title = SelectedStep.Title;
 		var items = CopySteps();
 		items.RemoveAll(s => s.Id == SelectedStep.Id);
 		// ponytail: copies share photo files; collect unreferenced photos only if storage becomes an issue.
-		await SaveStepsAsync(items);
+		await SaveStepsAsync(items, $"« {title} » supprimée.");
 	});
 
 	[RelayCommand] Task MoveUpAsync() => MoveAsync(-1);
@@ -133,7 +157,7 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 		if (index < 0 || target < 0 || target >= items.Count) return;
 		var id = items[index].Id;
 		(items[index], items[target]) = (items[target], items[index]);
-		await SaveStepsAsync(items);
+		await SaveStepsAsync(items, "Ordre enregistré.");
 		SelectedStep = Steps.First(s => s.Id == id);
 	});
 
@@ -142,7 +166,7 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 		Id = s.Id, Day = s.Day, Period = s.Period, Order = s.Order, Title = s.Title, Image = s.Image
 	}).ToList();
 
-	async Task SaveStepsAsync(List<RoutineStep> items)
+	async Task SaveStepsAsync(List<RoutineStep> items, string status)
 	{
 		var db = await database.ConnectionAsync();
 		await db.RunInTransactionAsync(connection =>
@@ -155,7 +179,7 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 			}
 		});
 		await ReloadStepsAsync();
-		Status = "Programme enregistré.";
+		Status = status;
 		messenger.Send(new RoutineChangedMessage());
 	}
 

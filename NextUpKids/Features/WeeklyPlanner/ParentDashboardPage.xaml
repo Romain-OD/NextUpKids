@@ -1,11 +1,22 @@
 ﻿<ContentPage x:Class="NextUpKids.Features.WeeklyPlanner.ParentDashboardPage"
              xmlns:local="clr-namespace:NextUpKids.Features.WeeklyPlanner"
              xmlns:data="clr-namespace:NextUpKids.Common.Database"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:DataType="local:ParentDashboardViewModel" BackgroundColor="{StaticResource Cloud}" Title="Programme de la semaine">
-    <Grid Padding="20,12" RowDefinitions="Auto,*,Auto" RowSpacing="12">
-        <Grid ColumnDefinitions="*,Auto">
-            <Label Text="Programme de la semaine" FontSize="26" FontFamily="NunitoBold" />
-            <Button Grid.Column="1" Text="Retour enfant" Style="{StaticResource QuietButton}" Clicked="OnClose" AutomationId="ClosePlanner" />
+    <ContentPage.Resources>
+        <toolkit:IsStringNotNullOrEmptyConverter x:Key="HasText" />
+    </ContentPage.Resources>
+    <Grid Padding="20,12" RowDefinitions="Auto,*" RowSpacing="12">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+            <Label Text="Programme de la semaine" FontSize="26" FontFamily="NunitoBold" VerticalOptions="Center" />
+            <!-- Feedback sits at the top so the keyboard never hides it. -->
+            <Label Grid.Column="1" Text="{Binding Error}" TextColor="{StaticResource ErrorText}" FontFamily="NunitoBold"
+                   HorizontalTextAlignment="End" VerticalOptions="Center" LineBreakMode="TailTruncation" AutomationId="PlannerError"
+                   IsVisible="{Binding Error, Converter={StaticResource HasText}}" />
+            <Label Grid.Column="1" Text="{Binding Status, StringFormat='✓ {0}'}" TextColor="{StaticResource SuccessText}" FontFamily="NunitoBold"
+                   HorizontalTextAlignment="End" VerticalOptions="Center" LineBreakMode="TailTruncation" AutomationId="PlannerStatus"
+                   IsVisible="{Binding Status, Converter={StaticResource HasText}}" />
+            <Button Grid.Column="2" Text="Retour enfant" Style="{StaticResource QuietButton}" Clicked="OnClose" AutomationId="ClosePlanner" />
         </Grid>
         <Grid Grid.Row="1" ColumnDefinitions="0.85*,1.15*" ColumnSpacing="20" IsEnabled="{Binding CanEdit}">
             <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="*,*" RowSpacing="10" ColumnSpacing="10">
@@ -15,8 +26,8 @@
                 <Picker x:Name="PeriodPicker" Grid.Column="1" Title="Période" SelectedIndex="0"
                         ItemsSource="{x:Static local:ParentDashboardViewModel.PeriodNames}"
                         SelectedIndexChanged="OnSelectionChanged" AutomationId="PeriodPicker" />
-                <CollectionView Grid.Row="1" Grid.ColumnSpan="2" ItemsSource="{Binding Steps}" SelectedItem="{Binding SelectedStep}"
-                                SelectionMode="Single" EmptyView="Aucune étape. Ajoutez-en une."
+                <CollectionView x:Name="StepsList" Grid.Row="1" Grid.ColumnSpan="2" ItemsSource="{Binding Steps}"
+                                SelectionMode="Single" SelectionChanged="OnStepSelected" EmptyView="Aucune étape. Ajoutez-en une."
                                 AutomationId="StepsList">
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="data:RoutineStep">
@@ -38,20 +49,30 @@
                     </CollectionView.ItemTemplate>
                 </CollectionView>
                 <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="*,*,*" ColumnSpacing="6">
-                    <Button Text="Ajouter" Padding="6,10" Command="{Binding NewStepCommand}" AutomationId="NewStep" />
+                    <Button Text="+ Nouvelle" Padding="6,10" Clicked="OnNewStep" AutomationId="NewStep" />
                     <Button Grid.Column="1" Text="Monter" Padding="6,10" Style="{StaticResource QuietButton}" Command="{Binding MoveUpCommand}" />
                     <Button Grid.Column="2" Text="Descendre" Padding="6,10" Style="{StaticResource QuietButton}" Command="{Binding MoveDownCommand}" />
                 </Grid>
             </Grid>
             <ScrollView Grid.Column="1">
                 <VerticalStackLayout Spacing="12" Padding="0,0,8,24">
-                    <Label Text="Étape : modifier puis enregistrer" FontFamily="NunitoBold" />
-                    <Entry Text="{Binding StepTitle}" Placeholder="Instruction à lire à l'enfant" MaxLength="140"
-                           AutomationId="StepTitleEntry" SemanticProperties.Description="Titre de l'étape" />
-                    <Image Source="{Binding StepImage}" HeightRequest="90" Aspect="AspectFit" />
-                    <Picker Title="Catégorie" ItemsSource="{x:Static local:ParentDashboardViewModel.Categories}"
+                    <Label Text="{Binding EditorTitle}" FontSize="20" FontFamily="NunitoBold" AutomationId="EditorTitle" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                        <Image Source="{Binding StepImage}" HeightRequest="56" WidthRequest="56" Aspect="AspectFit" />
+                        <Entry x:Name="TitleEntry" Grid.Column="1" Text="{Binding StepTitle}" Placeholder="Instruction à lire à l'enfant"
+                               MaxLength="140" ReturnType="Done" Completed="OnSave"
+                               AutomationId="StepTitleEntry" SemanticProperties.Description="Titre de l'étape" />
+                    </Grid>
+                    <Label Text="{Binding TitleError}" TextColor="{StaticResource ErrorText}" AutomationId="TitleError"
+                           IsVisible="{Binding TitleError, Converter={StaticResource HasText}}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Text="{Binding SaveText}" Clicked="OnSave" AutomationId="SaveStep" />
+                        <Button Grid.Column="1" Text="Supprimer" Clicked="OnDelete" Style="{StaticResource DangerButton}"
+                                IsVisible="{Binding IsEditing}" AutomationId="DeleteStep" />
+                    </Grid>
+                    <Picker Title="Catégorie d'illustration" ItemsSource="{x:Static local:ParentDashboardViewModel.Categories}"
                             SelectedItem="{Binding Category}" AutomationId="IconCategory" />
-                    <CollectionView ItemsSource="{Binding Icons}" SelectionMode="Single"
+                    <CollectionView ItemsSource="{Binding Icons}" SelectionMode="Single" SelectedItem="{Binding SelectedIcon, Mode=OneWay}"
                                     SelectionChanged="OnIconSelected" HeightRequest="115">
                         <CollectionView.ItemsLayout>
                             <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />
@@ -59,6 +80,16 @@
                         <CollectionView.ItemTemplate>
                             <DataTemplate x:DataType="local:IconChoice">
                                 <VerticalStackLayout WidthRequest="80" Padding="4">
+                                    <VisualStateManager.VisualStateGroups>
+                                        <VisualStateGroup Name="CommonStates">
+                                            <VisualState Name="Normal">
+                                                <VisualState.Setters><Setter Property="BackgroundColor" Value="Transparent" /></VisualState.Setters>
+                                            </VisualState>
+                                            <VisualState Name="Selected">
+                                                <VisualState.Setters><Setter Property="BackgroundColor" Value="{StaticResource Selected}" /></VisualState.Setters>
+                                            </VisualState>
+                                        </VisualStateGroup>
+                                    </VisualStateManager.VisualStateGroups>
                                     <Image Source="{Binding Image}" HeightRequest="62" Aspect="AspectFit" />
                                     <Label Text="{Binding Title}" FontSize="13" HorizontalTextAlignment="Center" />
                                 </VerticalStackLayout>
@@ -66,10 +97,6 @@
                         </CollectionView.ItemTemplate>
                     </CollectionView>
                     <Button Text="Importer une photo" Style="{StaticResource SkyButton}" Clicked="OnPickPhoto" AutomationId="ImportPhoto" />
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                        <Button Text="Enregistrer l'étape" Command="{Binding SaveStepCommand}" AutomationId="SaveStep" />
-                        <Button Grid.Column="1" Text="Supprimer l'étape" Clicked="OnDelete" Style="{StaticResource DangerButton}" />
-                    </Grid>
                     <BoxView HeightRequest="1" Color="{StaticResource Swan}" />
                     <Label Text="Déclenchement de cette période — tous les jours" FontFamily="NunitoBold" />
                     <TimePicker Time="{Binding StartTime}" Format="HH:mm" AutomationId="TriggerTime"
@@ -110,10 +137,6 @@
                 </VerticalStackLayout>
             </ScrollView>
         </Grid>
-        <VerticalStackLayout Grid.Row="2">
-            <Label Text="{Binding Error}" TextColor="{StaticResource ErrorText}" AutomationId="PlannerError" />
-            <Label Text="{Binding Status}" TextColor="{StaticResource SuccessText}" />
-        </VerticalStackLayout>
         <ActivityIndicator Grid.Row="1" IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" InputTransparent="True" />
     </Grid>
 </ContentPage>
