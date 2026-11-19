@@ -4,7 +4,7 @@ namespace NextUpKids.Features.ChildPlayer;
 public sealed class SparkleView : GraphicsView, IDrawable
 {
 	const int Rays = 12;
-	static readonly Color[] Palette = [Color.FromArgb("#FFC800"), Color.FromArgb("#1CB0F6"), Color.FromArgb("#58CC02"), Color.FromArgb("#FF4B4B")];
+	static readonly Color[] Palette = [Color.FromArgb("#FFC53D"), Color.FromArgb("#9B85FF"), Color.FromArgb("#FF8FB8"), Color.FromArgb("#6FD3A8")];
 	static readonly Color RayColor = Color.FromArgb("#FFE066");
 
 	readonly (float Angle, float Speed, float Size, float Spin, Color Color)[] sparks = Enumerable.Range(0, 24)

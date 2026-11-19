@@ -12,8 +12,8 @@
 
     <Style TargetType="Border">
         <Setter Property="Stroke" Value="{StaticResource Swan}" />
-        <Setter Property="StrokeShape" Value="RoundRectangle 20"/>
-        <Setter Property="StrokeThickness" Value="2"/>
+        <Setter Property="StrokeShape" Value="RoundRectangle 24"/>
+        <Setter Property="StrokeThickness" Value="1.5"/>
     </Style>
 
     <Style TargetType="BoxView">
@@ -28,8 +28,8 @@
         <Setter Property="FontFamily" Value="NunitoBold"/>
         <Setter Property="FontSize" Value="18"/>
         <Setter Property="BorderWidth" Value="0"/>
-        <Setter Property="CornerRadius" Value="18"/>
-        <Setter Property="Padding" Value="18,10"/>
+        <Setter Property="CornerRadius" Value="28"/>
+        <Setter Property="Padding" Value="22,10"/>
         <Setter Property="MinimumHeightRequest" Value="56"/>
         <Setter Property="MinimumWidthRequest" Value="56"/>
         <Setter Property="Margin" Value="0,0,0,6"/>
@@ -75,7 +75,7 @@
 
     <Style TargetType="Button" x:Key="QuietButton" BasedOn="{StaticResource ChunkyButton}">
         <Setter Property="BackgroundColor" Value="{StaticResource White}" />
-        <Setter Property="TextColor" Value="{StaticResource Sky}" />
+        <Setter Property="TextColor" Value="{StaticResource Primary}" />
         <Setter Property="BorderColor" Value="{StaticResource Swan}" />
         <Setter Property="BorderWidth" Value="2" />
         <Setter Property="Shadow">

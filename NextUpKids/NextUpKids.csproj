@@ -23,8 +23,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<MauiIcon Include="Common\Resources\AppIcon\appicon.svg" ForegroundFile="Common\Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
-		<MauiSplashScreen Include="Common\Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+		<MauiIcon Include="Common\Resources\AppIcon\appicon.svg" ForegroundFile="Common\Resources\AppIcon\appiconfg.svg" Color="#7357E8" />
+		<MauiSplashScreen Include="Common\Resources\Splash\splash.svg" Color="#7357E8" BaseSize="128,128" />
 		<MauiImage Include="Common\Resources\Images\*.svg" BaseSize="512,512" />
 		<MauiFont Include="Common\Resources\Fonts\*.ttf" />
 		<MauiAsset Include="Common\Resources\Images\*.txt;Common\Resources\Fonts\*.txt" LogicalName="Licenses/%(Filename)%(Extension)" />

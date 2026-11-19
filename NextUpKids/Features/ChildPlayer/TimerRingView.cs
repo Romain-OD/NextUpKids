@@ -1,6 +1,6 @@
 namespace NextUpKids.Features.ChildPlayer;
 
-/// <summary>Visual countdown like a Time Timer: a red disc that shrinks as time runs out.</summary>
+/// <summary>Visual countdown like a Time Timer: a violet disc that shrinks as time runs out.</summary>
 public sealed class TimerRingView : GraphicsView, IDrawable
 {
 	public static readonly BindableProperty FractionProperty =
@@ -8,9 +8,9 @@ public sealed class TimerRingView : GraphicsView, IDrawable
 	public static readonly BindableProperty TextProperty =
 		BindableProperty.Create(nameof(Text), typeof(string), typeof(TimerRingView), "", propertyChanged: Redraw);
 
-	static readonly Color Ink = Color.FromArgb("#2B2D42");
-	static readonly Color Time = Color.FromArgb("#FF4B4B");
-	static readonly Color Over = Color.FromArgb("#AFAFAF");
+	static readonly Color Ink = Color.FromArgb("#2A2350");
+	static readonly Color Time = Color.FromArgb("#7357E8");
+	static readonly Color Over = Color.FromArgb("#BDB6D9");
 
 	public TimerRingView()
 	{

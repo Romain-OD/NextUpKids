@@ -26,6 +26,7 @@ public sealed class FoxBuddyView : GraphicsView, IDrawable
 	static readonly Color Purple = Color.FromArgb("#CE82FF");
 	static readonly Color Sun = Color.FromArgb("#FFC800");
 	static readonly Color Wood = Color.FromArgb("#B9773C");
+	static readonly Color Petal = Color.FromArgb("#FFB3D1");
 	// Extra width on the right leaves room for the pointing/waving paw.
 	const float ArtWidth = 230, ArtHeight = 300, Outline = 5;
 
@@ -286,7 +287,21 @@ public sealed class FoxBuddyView : GraphicsView, IDrawable
 			canvas.DrawArc(86, 110, 14, 12, 180, 360, false, false);
 			canvas.DrawArc(100, 110, 14, 12, 180, 360, false, false);
 		}
+		if (doing != Act.Coat) Flower(canvas, 136, 46);
 		canvas.RestoreState();
+	}
+
+	static void Flower(ICanvas canvas, float x, float y)
+	{
+		canvas.StrokeSize = 2.5f;
+		for (var i = 0; i < 5; i++)
+		{
+			var a = i * MathF.Tau / 5 - MathF.PI / 2;
+			var (px, py) = (x + MathF.Cos(a) * 8, y + MathF.Sin(a) * 8);
+			Shape(canvas, Petal, c => c.FillCircle(px, py, 7), c => c.DrawCircle(px, py, 7));
+		}
+		Shape(canvas, Sun, c => c.FillCircle(x, y, 5), c => c.DrawCircle(x, y, 5));
+		canvas.StrokeSize = Outline;
 	}
 
 	static void Tail(ICanvas canvas, float t, bool still)

@@ -15,17 +15,20 @@
                    AutomationId="RoutineTitle">
                 <Label.Triggers>
                     <DataTrigger TargetType="Label" Binding="{Binding IsDimmed}" Value="True">
-                        <Setter Property="TextColor" Value="#D8DDED" />
+                        <Setter Property="TextColor" Value="#E4DEFA" />
                     </DataTrigger>
                 </Label.Triggers>
             </Label>
-            <Border HorizontalOptions="End" VerticalOptions="Center" BackgroundColor="{StaticResource Sun}" StrokeThickness="0"
-                    StrokeShape="RoundRectangle 20" Padding="14,4" x:Name="StarBadge" AutomationId="StarBadge"
+            <Border HorizontalOptions="End" VerticalOptions="Center" BackgroundColor="{StaticResource White}"
+                    StrokeShape="RoundRectangle 24" Padding="16,4" x:Name="StarBadge" AutomationId="StarBadge"
                     SemanticProperties.Description="{Binding Stars, StringFormat='{0} étoiles'}">
                 <Border.Shadow>
-                    <Shadow Brush="{StaticResource SunLip}" Offset="0,4" Radius="0" Opacity="1" />
+                    <Shadow Brush="{StaticResource Primary}" Offset="0,4" Radius="12" Opacity="0.18" />
                 </Border.Shadow>
-                <Label Text="{Binding Stars, StringFormat='★ {0}'}" FontSize="26" FontFamily="NunitoBold" />
+                <HorizontalStackLayout Spacing="8">
+                    <Label Text="★" FontSize="28" TextColor="{StaticResource SunLip}" VerticalOptions="Center" />
+                    <Label Text="{Binding Stars}" FontSize="26" FontFamily="NunitoBold" VerticalOptions="Center" />
+                </HorizontalStackLayout>
             </Border>
             <!-- Filou acts out the step next to the card; the timer sits on the other side. -->
             <Grid Grid.Row="1" ColumnDefinitions="*,1.5*,*" ColumnSpacing="12">
@@ -35,7 +38,7 @@
             <Border x:Name="StepCard" Grid.Column="1" BackgroundColor="{StaticResource White}"
                     StrokeShape="RoundRectangle 32" Padding="12" HorizontalOptions="Center">
                 <Border.Shadow>
-                    <Shadow Brush="{StaticResource Swan}" Offset="0,6" Radius="0" Opacity="1" />
+                    <Shadow Brush="{StaticResource Primary}" Offset="0,8" Radius="24" Opacity="0.16" />
                 </Border.Shadow>
                 <Border.Triggers>
                     <DataTrigger TargetType="Border" Binding="{Binding IsDimmed}" Value="True">
@@ -50,32 +53,32 @@
             </Grid>
             <Grid Grid.Row="2" ColumnDefinitions="90,*,90" ColumnSpacing="18">
                 <ImageButton Source="speaker.png" Command="{Binding ReplayCommand}" HeightRequest="70"
-                             BackgroundColor="{StaticResource Sky}" CornerRadius="22" Padding="14" AutomationId="ReplayButton"
+                             BackgroundColor="{StaticResource Primary}" CornerRadius="35" Padding="14" AutomationId="ReplayButton"
                              SemanticProperties.Description="Répéter / Repeat">
                     <ImageButton.Shadow>
-                        <Shadow Brush="{StaticResource SkyLip}" Offset="0,6" Radius="0" Opacity="1" />
+                        <Shadow Brush="{StaticResource PrimaryLip}" Offset="0,6" Radius="0" Opacity="1" />
                     </ImageButton.Shadow>
                 </ImageButton>
                 <Button Grid.Column="1" Text="{Binding DoneText}" Command="{Binding DoneCommand}"
-                        IsVisible="{Binding HasStep}" FontSize="30" CornerRadius="24" HeightRequest="76"
+                        IsVisible="{Binding HasStep}" FontSize="30" CornerRadius="38" HeightRequest="76"
                         AutomationId="DoneButton" />
                 <HorizontalStackLayout Grid.Column="1" HorizontalOptions="Center" Spacing="12" IsVisible="{Binding ShowRewards}"
                                        BindableLayout.ItemsSource="{Binding Rewards}" AutomationId="Rewards">
                     <BindableLayout.ItemTemplate>
                         <DataTemplate x:DataType="local:RewardOption">
-                            <Button Text="{Binding Text}" IsEnabled="{Binding Affordable}" FontSize="24" CornerRadius="24" HeightRequest="76"
+                            <Button Text="{Binding Text}" IsEnabled="{Binding Affordable}" FontSize="24" CornerRadius="38" HeightRequest="76"
                                     BackgroundColor="{StaticResource Sun}" TextColor="{StaticResource Ink}"
                                     Command="{Binding RedeemCommand, Source={RelativeSource AncestorType={x:Type local:ChildRoutineViewModel}}, x:DataType=local:ChildRoutineViewModel}"
                                     CommandParameter="{Binding .}" />
                         </DataTemplate>
                     </BindableLayout.ItemTemplate>
                 </HorizontalStackLayout>
-                <Border Grid.Column="2" BackgroundColor="{StaticResource Sun}" StrokeThickness="0" IsVisible="{Binding HasStep}"
-                        StrokeShape="RoundRectangle 22" HeightRequest="52" VerticalOptions="Center">
+                <Border Grid.Column="2" BackgroundColor="{StaticResource White}" IsVisible="{Binding HasStep}"
+                        StrokeShape="RoundRectangle 26" HeightRequest="52" VerticalOptions="Center">
                     <Border.Shadow>
-                        <Shadow Brush="{StaticResource SunLip}" Offset="0,4" Radius="0" Opacity="1" />
+                        <Shadow Brush="{StaticResource Primary}" Offset="0,4" Radius="12" Opacity="0.18" />
                     </Border.Shadow>
-                    <Label Text="{Binding Progress}" FontSize="22" FontFamily="NunitoBold"
+                    <Label Text="{Binding Progress}" FontSize="22" FontFamily="NunitoBold" TextColor="{StaticResource Primary}"
                            VerticalTextAlignment="Center" HorizontalTextAlignment="Center" />
                 </Border>
             </Grid>
