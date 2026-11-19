@@ -63,21 +63,22 @@
             </Grid>
             <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="70,*,70" ColumnSpacing="12">
                 <ImageButton Source="speaker.png" Command="{Binding ReplayCommand}" HeightRequest="66"
-                             BackgroundColor="{StaticResource Primary}" CornerRadius="33" Padding="12" AutomationId="ReplayButton"
+                             BackgroundColor="{StaticResource PrimaryGlass}" BorderColor="{StaticResource GlassRim}" BorderWidth="2"
+                             CornerRadius="33" Padding="12" AutomationId="ReplayButton"
                              SemanticProperties.Description="Répéter / Repeat">
                     <ImageButton.Shadow>
-                        <Shadow Brush="{StaticResource PrimaryLip}" Offset="0,6" Radius="0" Opacity="1" />
+                        <Shadow Brush="{StaticResource Primary}" Offset="0,6" Radius="18" Opacity="0.25" />
                     </ImageButton.Shadow>
                 </ImageButton>
                 <Button Grid.Column="1" Text="{Binding DoneText}" Command="{Binding DoneCommand}"
-                        IsVisible="{Binding HasStep}" FontSize="28" CornerRadius="38" HeightRequest="76"
+                        IsVisible="{Binding HasStep}" FontSize="28" CornerRadius="38" HeightRequest="76" Style="{StaticResource GlassButton}"
                         AutomationId="DoneButton" />
                 <HorizontalStackLayout Grid.Column="1" Grid.ColumnSpan="2" HorizontalOptions="Center" Spacing="12" IsVisible="{Binding ShowRewards}"
                                        BindableLayout.ItemsSource="{Binding Rewards}" AutomationId="Rewards">
                     <BindableLayout.ItemTemplate>
                         <DataTemplate x:DataType="local:RewardOption">
                             <Button Text="{Binding Text}" IsEnabled="{Binding Affordable}" FontSize="22" CornerRadius="38" HeightRequest="76"
-                                    BackgroundColor="{StaticResource Sun}" TextColor="{StaticResource Ink}"
+                                    Style="{StaticResource GlassSunButton}"
                                     Command="{Binding RedeemCommand, Source={RelativeSource AncestorType={x:Type local:ChildRoutineViewModel}}, x:DataType=local:ChildRoutineViewModel}"
                                     CommandParameter="{Binding .}" />
                         </DataTemplate>

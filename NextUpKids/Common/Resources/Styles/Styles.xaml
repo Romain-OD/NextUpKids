@@ -73,6 +73,24 @@
         </Setter>
     </Style>
 
+    <!-- See-through buttons that let the lavender stage show through (child screen). -->
+    <Style TargetType="Button" x:Key="GlassButton" BasedOn="{StaticResource ChunkyButton}">
+        <Setter Property="BackgroundColor" Value="{StaticResource PrimaryGlass}" />
+        <Setter Property="BorderColor" Value="{StaticResource GlassRim}" />
+        <Setter Property="BorderWidth" Value="2" />
+        <Setter Property="Shadow">
+            <Shadow Brush="{StaticResource Primary}" Offset="0,6" Radius="18" Opacity="0.25" />
+        </Setter>
+    </Style>
+
+    <Style TargetType="Button" x:Key="GlassSunButton" BasedOn="{StaticResource GlassButton}">
+        <Setter Property="BackgroundColor" Value="{StaticResource SunGlass}" />
+        <Setter Property="TextColor" Value="{StaticResource Ink}" />
+        <Setter Property="Shadow">
+            <Shadow Brush="{StaticResource SunLip}" Offset="0,6" Radius="18" Opacity="0.25" />
+        </Setter>
+    </Style>
+
     <Style TargetType="Button" x:Key="QuietButton" BasedOn="{StaticResource ChunkyButton}">
         <Setter Property="BackgroundColor" Value="{StaticResource White}" />
         <Setter Property="TextColor" Value="{StaticResource Primary}" />
