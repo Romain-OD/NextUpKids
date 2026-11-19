@@ -22,7 +22,8 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 	public static IReadOnlyList<string> PeriodNames { get; } = ["Avant l'école", "Après l'école", "Repas", "Coucher"];
 	public static IReadOnlyList<string> VoiceNames { get; } = ["Activée", "Douce", "Désactivée"];
 	public static IReadOnlyList<string> LanguageNames { get; } = ["Français", "English"];
-	public static IReadOnlyList<string> Categories { get; } = ["Hygiène", "Sports", "Vie quotidienne"];
+	public static IReadOnlyList<string> Categories { get; } = ["Hygiène", "Habits", "Sports", "Vie quotidienne"];
+	public static IReadOnlyList<TimerChoice> Timers => IconCatalog.Timers;
 	public IReadOnlyList<IconChoice> Icons => IconCatalog.All.Where(i => i.Category == Category).ToArray();
 	public bool CanEdit => !IsBusy;
 	public bool IsEditing => SelectedStep is not null;
@@ -32,7 +33,8 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 	public DayOfWeek Day => day;
 	public Period Period => period;
 	public bool HasUnsavedChanges =>
-		StepTitle.Trim() != (SelectedStep?.Title ?? "") || StepImage != (SelectedStep?.Image ?? DefaultImage);
+		StepTitle.Trim() != (SelectedStep?.Title ?? "") || StepImage != (SelectedStep?.Image ?? DefaultImage) || StepSeconds != (SelectedStep?.Seconds ?? 0);
+	int StepSeconds => IconCatalog.Timers[Math.Clamp(StepTimerIndex, 0, IconCatalog.Timers.Count - 1)].Seconds;
 	const string DefaultImage = "play.png";
 	string autoTitle = "";
 
@@ -42,6 +44,7 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 	[ObservableProperty] public partial string StepTitle { get; set; } = "";
 	[ObservableProperty, NotifyPropertyChangedFor(nameof(SelectedIcon))]
 	public partial string StepImage { get; set; } = DefaultImage;
+	[ObservableProperty] public partial int StepTimerIndex { get; set; }
 	[ObservableProperty] public partial string TitleError { get; set; } = "";
 	[ObservableProperty] public partial string Error { get; set; } = "";
 	[ObservableProperty] public partial string Status { get; set; } = "";
@@ -59,6 +62,7 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 		autoTitle = "";
 		StepTitle = value?.Title ?? "";
 		StepImage = value?.Image ?? DefaultImage;
+		StepTimerIndex = IconCatalog.TimerIndex(value?.Seconds ?? 0);
 		TitleError = "";
 		if (value is not null && SelectedIcon is { } icon) Category = icon.Category;
 	}
@@ -99,6 +103,7 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 		autoTitle = "";
 		StepTitle = "";
 		StepImage = DefaultImage;
+		StepTimerIndex = 0;
 		TitleError = "";
 	}
 
@@ -108,7 +113,11 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 		if (icon is null || !IconCatalog.All.Contains(icon)) return;
 		StepImage = icon.Image;
 		// Quick preset: an empty (or previously auto-filled) title takes the icon name.
-		if (StepTitle.Trim().Length == 0 || StepTitle == autoTitle) StepTitle = autoTitle = icon.Title;
+		if (StepTitle.Trim().Length == 0 || StepTitle == autoTitle)
+		{
+			StepTitle = autoTitle = icon.Phrase;
+			StepTimerIndex = IconCatalog.TimerIndex(AppDatabase.DefaultSeconds(icon.Image));
+		}
 	}
 
 	[RelayCommand]
@@ -129,7 +138,7 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 		}
 		var items = CopySteps();
 		var existing = items.FindIndex(s => s.Id == SelectedStep?.Id);
-		var edited = new RoutineStep { Id = SelectedStep?.Id ?? 0, Title = title, Image = StepImage, Day = day, Period = period };
+		var edited = new RoutineStep { Id = SelectedStep?.Id ?? 0, Title = title, Image = StepImage, Seconds = StepSeconds, Day = day, Period = period };
 		if (existing < 0) items.Add(edited);
 		else items[existing] = edited;
 		await SaveStepsAsync(items, existing < 0 ? $"« {title} » ajoutée." : $"« {title} » modifiée.");
@@ -163,7 +172,7 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 
 	List<RoutineStep> CopySteps() => Steps.Select(s => new RoutineStep
 	{
-		Id = s.Id, Day = s.Day, Period = s.Period, Order = s.Order, Title = s.Title, Image = s.Image
+		Id = s.Id, Day = s.Day, Period = s.Period, Order = s.Order, Title = s.Title, Image = s.Image, Seconds = s.Seconds
 	}).ToList();
 
 	async Task SaveStepsAsync(List<RoutineStep> items, string status)
@@ -200,7 +209,7 @@ public partial class ParentDashboardViewModel(AppDatabase database, IVoiceServic
 			{
 				connection.Execute("DELETE FROM RoutineStep WHERE Day = ?", target);
 				foreach (var step in source)
-					connection.Insert(new RoutineStep { Day = target, Period = step.Period, Order = step.Order, Title = step.Title, Image = step.Image });
+					connection.Insert(new RoutineStep { Day = target, Period = step.Period, Order = step.Order, Title = step.Title, Image = step.Image, Seconds = step.Seconds });
 			}
 		});
 		Status = "Journée copiée.";

@@ -5,6 +5,7 @@
              x:DataType="local:ParentDashboardViewModel" BackgroundColor="{StaticResource Cloud}" Title="Programme de la semaine">
     <ContentPage.Resources>
         <toolkit:IsStringNotNullOrEmptyConverter x:Key="HasText" />
+        <local:TimerTextConverter x:Key="TimerText" />
     </ContentPage.Resources>
     <Grid Padding="20,12" RowDefinitions="Auto,*" RowSpacing="12">
         <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="16">
@@ -32,7 +33,7 @@
                                 AutomationId="StepsList">
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="data:RoutineStep">
-                            <Grid Padding="10" ColumnDefinitions="58,*" ColumnSpacing="10">
+                            <Grid Padding="10" ColumnDefinitions="58,*,Auto" ColumnSpacing="10">
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup Name="CommonStates">
                                         <VisualState Name="Normal">
@@ -45,6 +46,8 @@
                                 </VisualStateManager.VisualStateGroups>
                                 <Image Source="{Binding Image}" HeightRequest="52" Aspect="AspectFit" />
                                 <Label Grid.Column="1" Text="{Binding Title}" VerticalOptions="Center" />
+                                <Label Grid.Column="2" Text="{Binding Seconds, Converter={StaticResource TimerText}}" FontSize="14"
+                                       TextColor="{StaticResource InkSoft}" VerticalOptions="Center" />
                             </Grid>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
@@ -66,6 +69,9 @@
                     </Grid>
                     <Label Text="{Binding TitleError}" TextColor="{StaticResource ErrorText}" AutomationId="TitleError"
                            IsVisible="{Binding TitleError, Converter={StaticResource HasText}}" />
+                    <Picker Title="Minuteur (une étoile si l'étape est finie à temps)" ItemsSource="{x:Static local:ParentDashboardViewModel.Timers}"
+                            ItemDisplayBinding="{Binding Title, x:DataType=local:TimerChoice}"
+                            SelectedIndex="{Binding StepTimerIndex}" AutomationId="StepTimer" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                         <Button Text="{Binding SaveText}" Clicked="OnSave" AutomationId="SaveStep" />
                         <Button Grid.Column="1" Text="Supprimer" Clicked="OnDelete" Style="{StaticResource DangerButton}"

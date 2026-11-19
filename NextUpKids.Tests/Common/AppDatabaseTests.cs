@@ -13,11 +13,30 @@ public class AppDatabaseTests
 		var hockey = await connection.Table<EventRoutine>().FirstAsync(r => r.Title == "Hockey");
 		(await connection.Table<EventStep>().Where(s => s.RoutineId == hockey.Id).OrderBy(s => s.Order).ToListAsync())
 			.Select(s => s.Title).Should().Equal("S'habiller", "Aller aux toilettes", "Mettre ses chaussures");
-		(await connection.Table<EventRoutine>().CountAsync()).Should().Be(3);
+		(await connection.Table<EventRoutine>().CountAsync()).Should().Be(5);
 		await connection.DeleteAllAsync<EventRoutine>();
 
 		await using var reopened = new AppDatabase(scope.Path);
 		(await (await reopened.ConnectionAsync()).Table<EventRoutine>().CountAsync()).Should().Be(0);
+	}
+
+	[Fact]
+	public async Task Upgrade_adds_timer_presets_and_the_play_time_reward_to_an_older_database()
+	{
+		await using var scope = new TestDatabase();
+		var old = new SQLite.SQLiteAsyncConnection(scope.Path);
+		await old.ExecuteAsync("CREATE TABLE RoutineStep (Id INTEGER PRIMARY KEY AUTOINCREMENT, Day INTEGER, Period INTEGER, \"Order\" INTEGER, Title VARCHAR, Image VARCHAR)");
+		await old.ExecuteAsync("INSERT INTO RoutineStep (Day, Period, \"Order\", Title, Image) VALUES (1, 0, 0, 'Dents', 'toothbrush.png')");
+		await old.ExecuteAsync("CREATE TABLE EventRoutine (Id INTEGER PRIMARY KEY AUTOINCREMENT, Title VARCHAR, Image VARCHAR)");
+		await old.ExecuteAsync("INSERT INTO EventRoutine (Title, Image) VALUES ('Judo', 'play.png')");
+		await old.CloseAsync();
+
+		var connection = await scope.Database.ConnectionAsync();
+		(await connection.FindAsync<RoutineStep>(1)).Seconds.Should().Be(120);
+		var routines = await connection.Table<EventRoutine>().OrderBy(r => r.Id).ToListAsync();
+		routines.Select(r => (r.Title, r.Cost)).Should().Equal(("Judo", 0), ("Aller dehors", 0), ("Temps de jeu", 10));
+		var playId = routines[2].Id;
+		(await connection.Table<EventStep>().FirstAsync(s => s.RoutineId == playId)).Seconds.Should().Be(900);
 	}
 
 	[Fact]

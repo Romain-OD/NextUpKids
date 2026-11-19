@@ -9,6 +9,7 @@
     <Color x:Key="SkyLip">#076396</Color>
     <Color x:Key="Sun">#FFC800</Color>
     <Color x:Key="SunLip">#E0A800</Color>
+    <Color x:Key="FoxOrange">#E8701A</Color>
     <Color x:Key="Danger">#CC3333</Color>
     <Color x:Key="DangerLip">#992626</Color>
     <Color x:Key="Ink">#1F2A44</Color>

@@ -7,6 +7,7 @@
              x:DataType="local:EventPlannerViewModel" BackgroundColor="{StaticResource Cloud}" Title="Activités et calendrier">
     <ContentPage.Resources>
         <toolkit:IsStringNotNullOrEmptyConverter x:Key="HasText" />
+        <local:TimerTextConverter x:Key="TimerText" />
         <DataTemplate x:Key="IconTemplate" x:DataType="local:IconChoice">
             <VerticalStackLayout WidthRequest="80" Padding="4">
                 <VisualStateManager.VisualStateGroups>
@@ -65,6 +66,15 @@
                     </CollectionView.ItemTemplate>
                 </CollectionView>
                 <Button Text="+ Nouvelle activité" Padding="6,10" Command="{Binding NewRoutineCommand}" AutomationId="NewRoutine" />
+                <Label Text="Étoiles de l'enfant" FontSize="20" FontFamily="NunitoBold" />
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                    <Label Text="{Binding Stars, StringFormat='★ {0}'}" FontSize="24" FontFamily="NunitoBold" TextColor="{StaticResource FoxOrange}"
+                           VerticalOptions="Center" AutomationId="StarsTotal" />
+                    <Button Grid.Column="1" Text="+1 ★" Padding="12,6" Command="{Binding GiveStarCommand}" AutomationId="GiveStar" />
+                    <Button Grid.Column="2" Text="Remettre à 0" Padding="12,6" Style="{StaticResource QuietButton}"
+                            Command="{Binding ResetStarsCommand}" AutomationId="ResetStars" />
+                </Grid>
+                <Label Text="L'enfant gagne une étoile en finissant une étape avant la fin du minuteur." FontSize="14" />
                 <Label Text="Calendrier à venir" FontSize="20" FontFamily="NunitoBold" />
                 <VerticalStackLayout BindableLayout.ItemsSource="{Binding Upcoming}" AutomationId="UpcomingList">
                     <BindableLayout.EmptyView>
@@ -99,6 +109,12 @@
                             <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />
                         </CollectionView.ItemsLayout>
                     </CollectionView>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Label VerticalOptions="Center" Text="Récompense : coût en étoiles (0 = activité normale)" />
+                        <Stepper Grid.Column="1" Minimum="0" Maximum="100" Increment="5" Value="{Binding RoutineCost}" AutomationId="RoutineCost" />
+                    </Grid>
+                    <Label Text="{Binding RoutineCost, StringFormat='★ {0} : se débloque avec les étoiles'}" FontFamily="NunitoBold"
+                           IsVisible="{Binding IsReward}" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                         <Button Text="Enregistrer l'activité" Command="{Binding SaveRoutineCommand}" AutomationId="SaveRoutine" />
                         <Button Grid.Column="1" Text="Supprimer" Clicked="OnDeleteRoutine" Style="{StaticResource DangerButton}"
@@ -113,13 +129,17 @@
                             </BindableLayout.EmptyView>
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="data:EventStep">
-                                    <Grid ColumnDefinitions="48,*,Auto,Auto" ColumnSpacing="8">
+                                    <Grid ColumnDefinitions="48,*,Auto,Auto,Auto" ColumnSpacing="8">
                                         <Image Source="{Binding Image}" HeightRequest="44" Aspect="AspectFit" />
                                         <Label Grid.Column="1" Text="{Binding Title}" VerticalOptions="Center" />
-                                        <Button Grid.Column="2" Text="↑" Padding="14,4" MinimumHeightRequest="44" Style="{StaticResource QuietButton}"
+                                        <Button Grid.Column="2" Text="{Binding Seconds, Converter={StaticResource TimerText}, TargetNullValue='⏱'}"
+                                                Padding="10,4" MinimumHeightRequest="44" MinimumWidthRequest="56" Style="{StaticResource QuietButton}"
+                                                Command="{Binding CycleStepTimerCommand, Source={RelativeSource AncestorType={x:Type local:EventPlannerViewModel}}, x:DataType=local:EventPlannerViewModel}"
+                                                CommandParameter="{Binding .}" SemanticProperties.Description="Changer le minuteur" />
+                                        <Button Grid.Column="3" Text="↑" Padding="14,4" MinimumHeightRequest="44" Style="{StaticResource QuietButton}"
                                                 Command="{Binding MoveStepUpCommand, Source={RelativeSource AncestorType={x:Type local:EventPlannerViewModel}}, x:DataType=local:EventPlannerViewModel}"
                                                 CommandParameter="{Binding .}" SemanticProperties.Description="Monter" />
-                                        <Button Grid.Column="3" Text="✕" Padding="14,4" MinimumHeightRequest="44" Style="{StaticResource QuietButton}"
+                                        <Button Grid.Column="4" Text="✕" Padding="14,4" MinimumHeightRequest="44" Style="{StaticResource QuietButton}"
                                                 Command="{Binding RemoveStepCommand, Source={RelativeSource AncestorType={x:Type local:EventPlannerViewModel}}, x:DataType=local:EventPlannerViewModel}"
                                                 CommandParameter="{Binding .}" SemanticProperties.Description="Supprimer l'étape" />
                                     </Grid>
@@ -132,6 +152,9 @@
                                    MaxLength="140" ReturnType="Done" Completed="OnAddStep" AutomationId="EventStepEntry" />
                             <Button Grid.Column="2" Text="Ajouter" Clicked="OnAddStep" AutomationId="AddEventStep" />
                         </Grid>
+                        <Picker Title="Minuteur de l'étape" ItemsSource="{x:Static local:EventPlannerViewModel.Timers}"
+                                ItemDisplayBinding="{Binding Title, x:DataType=local:TimerChoice}"
+                                SelectedIndex="{Binding NewStepTimerIndex}" AutomationId="EventStepTimer" />
                         <CollectionView ItemsSource="{x:Static local:EventPlannerViewModel.Icons}" SelectionMode="Single"
                                         SelectedItem="{Binding StepIcon, Mode=OneWay}" SelectionChanged="OnStepIconSelected" HeightRequest="105"
                                         ItemTemplate="{StaticResource IconTemplate}">

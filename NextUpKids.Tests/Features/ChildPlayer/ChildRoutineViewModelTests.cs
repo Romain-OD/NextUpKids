@@ -211,4 +211,78 @@ public class ChildRoutineViewModelTests
 		vm.Progress.Should().Be("2 / 3");
 		vm.DoneCommand.CanExecute(null).Should().BeTrue();
 	}
+
+	[Fact]
+	public async Task Finishing_a_timed_step_before_the_timer_ends_earns_a_star()
+	{
+		await using var scope = new TestDatabase();
+		var clock = new FakeTimeProvider();
+		var voice = Voice();
+		using var vm = new ChildRoutineViewModel(scope.Database, voice, clock, new WeakReferenceMessenger());
+		await vm.SwitchPeriodAsync(new(new DateOnly(2026, 11, 16), Period.BeforeSchool));
+		vm.HasTimer.Should().BeTrue();
+		vm.TimerText.Should().Be("3:00");
+		clock.Advance(TimeSpan.FromSeconds(60));
+		vm.Tick();
+		vm.TimerText.Should().Be("2:00");
+		vm.TimerFraction.Should().BeApproximately(2 / 3d, 0.001);
+
+		var done = vm.DoneCommand.ExecuteAsync(null);
+		vm.Stars.Should().Be(1);
+		clock.Advance(TimeSpan.FromSeconds(1));
+		await done;
+		await voice.Received().SpeakAsync("Bravo ! Une étoile !", AppLanguage.French, VoiceMode.On, Arg.Any<CancellationToken>());
+		var db = await scope.Database.ConnectionAsync();
+		(await db.FindAsync<AppSettings>(1)).Stars.Should().Be(1);
+
+		vm.HasTimer.Should().BeFalse("breakfast has no timer");
+		done = vm.DoneCommand.ExecuteAsync(null);
+		clock.Advance(TimeSpan.FromSeconds(1));
+		await done;
+		vm.Title.Should().Be("Se brosser les dents");
+		clock.Advance(TimeSpan.FromSeconds(121));
+		vm.Tick();
+		vm.TimerText.Should().Be("0:00");
+		vm.TimerFraction.Should().Be(0);
+		done = vm.DoneCommand.ExecuteAsync(null);
+		clock.Advance(TimeSpan.FromSeconds(1));
+		await done;
+		vm.Stars.Should().Be(1, "a late step and a step without timer earn nothing");
+		(await db.FindAsync<AppSettings>(1)).Stars.Should().Be(1);
+	}
+
+	[Fact]
+	public async Task Stars_unlock_play_time_at_the_end_of_a_routine()
+	{
+		await using var scope = new TestDatabase();
+		var db = await scope.Database.ConnectionAsync();
+		await db.DeleteAllAsync<RoutineStep>();
+		await db.ExecuteAsync("UPDATE AppSettings SET Stars = 5 WHERE Id = 1");
+		var clock = new FakeTimeProvider();
+		var voice = Voice();
+		using var vm = new ChildRoutineViewModel(scope.Database, voice, clock, new WeakReferenceMessenger());
+		await vm.SwitchPeriodAsync(new(new DateOnly(2026, 11, 16), Period.AfterSchool));
+		vm.ShowRewards.Should().BeTrue();
+		vm.Rewards.Should().ContainSingle().Which.Affordable.Should().BeFalse();
+		await vm.RedeemCommand.ExecuteAsync(vm.Rewards[0]);
+		vm.Stars.Should().Be(5, "the child cannot spend stars they do not have");
+		vm.HasStep.Should().BeFalse();
+
+		await db.ExecuteAsync("UPDATE AppSettings SET Stars = 12 WHERE Id = 1");
+		await vm.SwitchPeriodAsync(new(new DateOnly(2026, 11, 16), Period.AfterSchool));
+		vm.Rewards[0].Affordable.Should().BeTrue();
+		await vm.RedeemCommand.ExecuteAsync(vm.Rewards[0]);
+		vm.Stars.Should().Be(2);
+		(await db.FindAsync<AppSettings>(1)).Stars.Should().Be(2);
+		vm.Title.Should().Be("Jouer");
+		vm.TimerText.Should().Be("15:00");
+		vm.ShowRewards.Should().BeFalse();
+
+		var done = vm.DoneCommand.ExecuteAsync(null);
+		clock.Advance(TimeSpan.FromSeconds(1));
+		await done;
+		vm.Stars.Should().Be(2, "play time itself earns no star");
+		vm.Title.Should().Be("Temps de jeu terminé !");
+		vm.ShowRewards.Should().BeFalse();
+	}
 }

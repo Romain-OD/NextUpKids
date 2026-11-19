@@ -19,9 +19,19 @@
                     </DataTrigger>
                 </Label.Triggers>
             </Label>
-            <!-- Nino points at the card; the card stays centred on screen. -->
+            <Border HorizontalOptions="End" VerticalOptions="Center" BackgroundColor="{StaticResource Sun}" StrokeThickness="0"
+                    StrokeShape="RoundRectangle 20" Padding="14,4" x:Name="StarBadge" AutomationId="StarBadge"
+                    SemanticProperties.Description="{Binding Stars, StringFormat='{0} étoiles'}">
+                <Border.Shadow>
+                    <Shadow Brush="{StaticResource SunLip}" Offset="0,4" Radius="0" Opacity="1" />
+                </Border.Shadow>
+                <Label Text="{Binding Stars, StringFormat='★ {0}'}" FontSize="26" FontFamily="NunitoBold" />
+            </Border>
+            <!-- Filou acts out the step next to the card; the timer sits on the other side. -->
             <Grid Grid.Row="1" ColumnDefinitions="*,1.5*,*" ColumnSpacing="12">
-            <local:ComicBuddyView x:Name="Buddy" Margin="0,8,0,0" />
+            <local:FoxBuddyView x:Name="Buddy" Margin="0,8,0,0" />
+            <local:TimerRingView Grid.Column="2" Fraction="{Binding TimerFraction}" Text="{Binding TimerText}"
+                                 IsVisible="{Binding HasTimer}" Margin="8,24" AutomationId="StepTimer" />
             <Border x:Name="StepCard" Grid.Column="1" BackgroundColor="{StaticResource White}"
                     StrokeShape="RoundRectangle 32" Padding="12" HorizontalOptions="Center">
                 <Border.Shadow>
@@ -49,6 +59,17 @@
                 <Button Grid.Column="1" Text="{Binding DoneText}" Command="{Binding DoneCommand}"
                         IsVisible="{Binding HasStep}" FontSize="30" CornerRadius="24" HeightRequest="76"
                         AutomationId="DoneButton" />
+                <HorizontalStackLayout Grid.Column="1" HorizontalOptions="Center" Spacing="12" IsVisible="{Binding ShowRewards}"
+                                       BindableLayout.ItemsSource="{Binding Rewards}" AutomationId="Rewards">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="local:RewardOption">
+                            <Button Text="{Binding Text}" IsEnabled="{Binding Affordable}" FontSize="24" CornerRadius="24" HeightRequest="76"
+                                    BackgroundColor="{StaticResource Sun}" TextColor="{StaticResource Ink}"
+                                    Command="{Binding RedeemCommand, Source={RelativeSource AncestorType={x:Type local:ChildRoutineViewModel}}, x:DataType=local:ChildRoutineViewModel}"
+                                    CommandParameter="{Binding .}" />
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </HorizontalStackLayout>
                 <Border Grid.Column="2" BackgroundColor="{StaticResource Sun}" StrokeThickness="0" IsVisible="{Binding HasStep}"
                         StrokeShape="RoundRectangle 22" HeightRequest="52" VerticalOptions="Center">
                     <Border.Shadow>

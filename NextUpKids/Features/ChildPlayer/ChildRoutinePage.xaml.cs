@@ -6,6 +6,8 @@ namespace NextUpKids.Features.ChildPlayer;
 public partial class ChildRoutinePage : ContentPage
 {
 	readonly ChildRoutineViewModel viewModel;
+	IDispatcherTimer? ticker;
+	int shownStars;
 
 	public ChildRoutinePage(ChildRoutineViewModel viewModel)
 	{
@@ -21,19 +23,44 @@ public partial class ChildRoutinePage : ContentPage
 	{
 		base.OnAppearing();
 		Buddy.IsSleeping = viewModel.IsDimmed;
+		Buddy.Show(viewModel.HasStep ? viewModel.Image : null);
+		shownStars = viewModel.Stars;
 		viewModel.PropertyChanged += OnFrameChanged;
+		ticker ??= Dispatcher.CreateTimer();
+		ticker.Interval = TimeSpan.FromMilliseconds(250);
+		ticker.Tick += OnTick;
+		ticker.Start();
 	}
 
 	protected override void OnDisappearing()
 	{
 		viewModel.PropertyChanged -= OnFrameChanged;
+		if (ticker is not null)
+		{
+			ticker.Stop();
+			ticker.Tick -= OnTick;
+		}
+		StarBadge.CancelAnimations();
 		FrameContent.CancelAnimations();
 		StepCard.CancelAnimations();
 		base.OnDisappearing();
 	}
 
+	void OnTick(object? sender, EventArgs e) => viewModel.Tick();
+
 	async void OnFrameChanged(object? sender, PropertyChangedEventArgs e)
 	{
+		if (e.PropertyName == nameof(ChildRoutineViewModel.Stars))
+		{
+			var earned = viewModel.Stars > shownStars;
+			shownStars = viewModel.Stars;
+			if (earned && !Motion.IsReduced)
+			{
+				StarBadge.Scale = 1.5;
+				await StarBadge.ScaleToAsync(1, 450, Easing.SpringOut);
+			}
+			return;
+		}
 		if (e.PropertyName == nameof(ChildRoutineViewModel.IsCelebrating) && viewModel.IsCelebrating)
 		{
 			try { HapticFeedback.Default.Perform(HapticFeedbackType.Click); } catch { /* no vibrator */ }
@@ -43,7 +70,7 @@ public partial class ChildRoutinePage : ContentPage
 		}
 		if (e.PropertyName == nameof(ChildRoutineViewModel.IsDimmed)) Buddy.IsSleeping = viewModel.IsDimmed;
 		if (e.PropertyName != nameof(ChildRoutineViewModel.Title)) return;
-		if (viewModel.HasStep) Buddy.Wave();
+		if (viewModel.HasStep) Buddy.Show(viewModel.Image);
 		else Buddy.Cheer();
 		FrameContent.Opacity = 0.4;
 		if (Motion.IsReduced)

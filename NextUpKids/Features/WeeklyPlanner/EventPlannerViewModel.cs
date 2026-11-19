@@ -19,6 +19,7 @@ public partial class EventPlannerViewModel(AppDatabase database, IMessenger mess
 	string autoTitle = "";
 
 	public static IReadOnlyList<IconChoice> Icons => IconCatalog.All;
+	public static IReadOnlyList<TimerChoice> Timers => IconCatalog.Timers;
 	public bool HasRoutine => SelectedRoutine is not null;
 	public bool CanEdit => !IsBusy;
 	public string RoutineEditorTitle => HasRoutine ? "Modifier l'activité" : "Nouvelle activité";
@@ -31,10 +32,14 @@ public partial class EventPlannerViewModel(AppDatabase database, IMessenger mess
 	[ObservableProperty] public partial string RoutineTitle { get; set; } = "";
 	[ObservableProperty, NotifyPropertyChangedFor(nameof(RoutineIcon))]
 	public partial string RoutineImage { get; set; } = DefaultImage;
+	[ObservableProperty, NotifyPropertyChangedFor(nameof(IsReward))] public partial int RoutineCost { get; set; }
+	public bool IsReward => RoutineCost > 0;
+	[ObservableProperty] public partial int Stars { get; set; }
 	[ObservableProperty] public partial ObservableCollection<EventStep> Steps { get; set; } = [];
 	[ObservableProperty] public partial string NewStepTitle { get; set; } = "";
 	[ObservableProperty, NotifyPropertyChangedFor(nameof(StepIcon))]
 	public partial string NewStepImage { get; set; } = DefaultImage;
+	[ObservableProperty] public partial int NewStepTimerIndex { get; set; }
 	[ObservableProperty] public partial ObservableCollection<UpcomingEvent> Upcoming { get; set; } = [];
 	[ObservableProperty] public partial DateTime EventDate { get; set; }
 	[ObservableProperty] public partial TimeSpan EventTime { get; set; } = new(17, 0, 0);
@@ -50,6 +55,7 @@ public partial class EventPlannerViewModel(AppDatabase database, IMessenger mess
 	{
 		RoutineTitle = value?.Title ?? "";
 		RoutineImage = value?.Image ?? DefaultImage;
+		RoutineCost = value?.Cost ?? 0;
 		// Reloads triggered inside an operation are awaited there instead.
 		if (!IsBusy) _ = RunAsync(ReloadStepsAsync);
 	}
@@ -65,6 +71,7 @@ public partial class EventPlannerViewModel(AppDatabase database, IMessenger mess
 		var db = await database.ConnectionAsync();
 		Routines = new(await db.Table<EventRoutine>().OrderBy(r => r.Title).ToListAsync());
 		SelectedRoutine = Routines.FirstOrDefault(r => r.Id == selectId);
+		Stars = (await db.FindAsync<AppSettings>(1)).Stars;
 		await ReloadStepsAsync();
 		var from = Today;
 		var titles = Routines.ToDictionary(r => r.Id);
@@ -86,6 +93,7 @@ public partial class EventPlannerViewModel(AppDatabase database, IMessenger mess
 		SelectedRoutine = null;
 		RoutineTitle = "";
 		RoutineImage = DefaultImage;
+		RoutineCost = 0;
 		Error = Status = "";
 	}
 
@@ -98,7 +106,12 @@ public partial class EventPlannerViewModel(AppDatabase database, IMessenger mess
 			Error = "Le nom de l'activité doit contenir entre 1 et 60 caractères.";
 			return;
 		}
-		var routine = new EventRoutine { Id = SelectedRoutine?.Id ?? 0, Title = title, Image = RoutineImage };
+		if (RoutineCost is < 0 or > 100)
+		{
+			Error = "Le coût d'une récompense va de 0 à 100 étoiles.";
+			return;
+		}
+		var routine = new EventRoutine { Id = SelectedRoutine?.Id ?? 0, Title = title, Image = RoutineImage, Cost = RoutineCost };
 		var db = await database.ConnectionAsync();
 		if (routine.Id == 0) await db.InsertAsync(routine);
 		else await db.UpdateAsync(routine);
@@ -136,7 +149,11 @@ public partial class EventPlannerViewModel(AppDatabase database, IMessenger mess
 	{
 		if (icon is null || !IconCatalog.All.Contains(icon)) return;
 		NewStepImage = icon.Image;
-		if (NewStepTitle.Trim().Length == 0 || NewStepTitle == autoTitle) NewStepTitle = autoTitle = icon.Title;
+		if (NewStepTitle.Trim().Length == 0 || NewStepTitle == autoTitle)
+		{
+			NewStepTitle = autoTitle = icon.Phrase;
+			NewStepTimerIndex = IconCatalog.TimerIndex(AppDatabase.DefaultSeconds(icon.Image));
+		}
 	}
 
 	[RelayCommand]
@@ -154,10 +171,12 @@ public partial class EventPlannerViewModel(AppDatabase database, IMessenger mess
 			return;
 		}
 		var db = await database.ConnectionAsync();
-		await db.InsertAsync(new EventStep { RoutineId = routine.Id, Order = Steps.Count, Title = title, Image = NewStepImage });
+		var seconds = IconCatalog.Timers[Math.Clamp(NewStepTimerIndex, 0, IconCatalog.Timers.Count - 1)].Seconds;
+		await db.InsertAsync(new EventStep { RoutineId = routine.Id, Order = Steps.Count, Title = title, Image = NewStepImage, Seconds = seconds });
 		await ReloadStepsAsync();
 		NewStepTitle = autoTitle = "";
 		NewStepImage = DefaultImage;
+		NewStepTimerIndex = 0;
 		Status = $"« {title} » ajoutée.";
 		messenger.Send(new RoutineChangedMessage());
 	});
@@ -172,6 +191,25 @@ public partial class EventPlannerViewModel(AppDatabase database, IMessenger mess
 		if (index > 0) (items[index - 1], items[index]) = (items[index], items[index - 1]);
 	}, "Ordre enregistré.");
 
+	// Each tap moves the step to the next timer duration, wrapping back to no timer.
+	[RelayCommand]
+	Task CycleStepTimerAsync(EventStep? step) => SaveOrderAsync(step, items =>
+	{
+		var item = items.First(s => s.Id == step!.Id);
+		item.Seconds = IconCatalog.Timers[(IconCatalog.TimerIndex(item.Seconds) + 1) % IconCatalog.Timers.Count].Seconds;
+	}, "Minuteur enregistré.");
+
+	[RelayCommand] Task GiveStarAsync() => SetStarsAsync(1);
+	[RelayCommand] Task ResetStarsAsync() => SetStarsAsync(null);
+
+	Task SetStarsAsync(int? add) => RunAsync(async () =>
+	{
+		var db = await database.ConnectionAsync();
+		await db.ExecuteAsync(add is { } n ? "UPDATE AppSettings SET Stars = COALESCE(Stars, 0) + ? WHERE Id = 1" : "UPDATE AppSettings SET Stars = 0 WHERE Id = 1", add ?? 0);
+		Stars = (await db.FindAsync<AppSettings>(1)).Stars;
+		messenger.Send(new RoutineChangedMessage());
+	});
+
 	Task SaveOrderAsync(EventStep? step, Action<List<EventStep>> change, string status) => RunAsync(async () =>
 	{
 		if (step is null || Steps.All(s => s.Id != step.Id)) return;
@@ -182,7 +220,7 @@ public partial class EventPlannerViewModel(AppDatabase database, IMessenger mess
 		{
 			connection.Execute("DELETE FROM EventStep WHERE RoutineId = ?", step.RoutineId);
 			for (var i = 0; i < items.Count; i++)
-				connection.Insert(new EventStep { RoutineId = step.RoutineId, Order = i, Title = items[i].Title, Image = items[i].Image });
+				connection.Insert(new EventStep { RoutineId = step.RoutineId, Order = i, Title = items[i].Title, Image = items[i].Image, Seconds = items[i].Seconds });
 		});
 		await ReloadStepsAsync();
 		Status = status;

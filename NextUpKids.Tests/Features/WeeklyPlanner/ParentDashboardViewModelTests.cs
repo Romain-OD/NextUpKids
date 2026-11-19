@@ -199,7 +199,8 @@ public class ParentDashboardViewModelTests
 		var vm = Create(scope);
 		await vm.LoadAsync();
 		vm.ChooseIconCommand.Execute(IconCatalog.All.First(i => i.Image == "shower.png"));
-		vm.StepTitle.Should().Be("Douche");
+		vm.StepTitle.Should().Be("Prendre une douche", "the icon fills in the full sentence read to the child");
+		IconCatalog.Timers[vm.StepTimerIndex].Seconds.Should().Be(300);
 		vm.ChooseIconCommand.Execute(IconCatalog.All.First(i => i.Image == "hockey.png"));
 		vm.StepTitle.Should().Be("Hockey", "an auto-filled title follows the chosen icon");
 		vm.HasUnsavedChanges.Should().BeTrue();

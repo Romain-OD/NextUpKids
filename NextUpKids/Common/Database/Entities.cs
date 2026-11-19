@@ -25,6 +25,8 @@ public sealed class RoutineStep
 	public int Order { get; set; }
 	public string Title { get; set; } = "";
 	public string Image { get; set; } = "play.png";
+	// Countdown for the step; 0 = no timer. Finishing in time earns a star.
+	public int Seconds { get; set; }
 }
 
 // A reusable activity ("Hockey") with its own ordered subtasks, played when a dated CalendarEvent starts.
@@ -34,6 +36,8 @@ public sealed class EventRoutine
 	public int Id { get; set; }
 	public string Title { get; set; } = "";
 	public string Image { get; set; } = "play.png";
+	// Stars the child spends to start it (e.g. play time); 0 = a normal activity.
+	public int Cost { get; set; }
 }
 
 public sealed class EventStep
@@ -45,6 +49,7 @@ public sealed class EventStep
 	public int Order { get; set; }
 	public string Title { get; set; } = "";
 	public string Image { get; set; } = "play.png";
+	public int Seconds { get; set; }
 }
 
 public sealed class CalendarEvent
@@ -63,4 +68,5 @@ public sealed class AppSettings
 	[PrimaryKey]
 	public int Id { get; set; } = 1;
 	public AppLanguage Language { get; set; } = AppLanguage.French;
+	public int Stars { get; set; }
 }
